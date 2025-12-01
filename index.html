@@ -33,7 +33,6 @@
         
         <form id="order-form" onsubmit="sendOrder(event)">
             
-            <!-- Ważne informacje (Tylko waga) -->
             <div class="mb-8">
                 <div class="bg-amber-50 border-l-4 border-amber-600 p-4 text-sm text-amber-900">
                     <p class="font-bold">⚖️ Informacja o wadze:</p>
@@ -47,22 +46,18 @@
                 <p class="text-center text-gray-500 py-10">Ładowanie oferty z arkusza...</p>
             </div>
 
-            <!-- Kody rabatowe -->
             <div class="mt-8 flex items-center justify-end gap-2">
                 <input type="text" id="discount-code" placeholder="Kod rabatowy" class="p-2 border rounded text-sm w-40 uppercase">
                 <button type="button" onclick="applyDiscount()" class="bg-gray-200 hover:bg-gray-300 px-4 py-2 rounded text-sm font-bold">Użyj</button>
             </div>
             <p id="discount-message" class="text-right text-xs mt-1 text-green-600 font-bold h-4"></p>
 
-            <!-- Podsumowanie -->
             <div class="bg-gray-100 p-4 rounded mt-4 text-right">
                 <span class="text-xl">Suma orientacyjna: <strong id="total-price" class="accent-text">0.00 zł</strong></span>
             </div>
 
-            <!-- SEKCJA DOSTAWY -->
             <h2 class="text-2xl font-serif mt-10 mb-6 border-b pb-2 accent-text">2. Dane do dostawy</h2>
             
-            <!-- Info o dostawie przeniesione tutaj -->
             <div class="bg-green-50 border-l-4 border-green-700 p-4 mb-6 text-sm text-green-900">
                 <p class="font-bold">🚚 Dostawa:</p>
                 <p>Realizujemy wyłącznie <strong>dostawy osobiste</strong>. Rozwozimy zamówienia w każdy <strong>CZWARTEK</strong>.</p>
@@ -99,26 +94,29 @@
     <script>
         // === TWÓJ LINK ARKUSZA ===
         const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSFPe99P7zAoHCVOezMhJPVMIwXJyaIl4MkHj8phq7Tq3ECF-e_5JXGYy2y3XP2GDO290G3djadkkPr/pub?output=csv'; 
-        // ========================
         
-        // KONFIGURACJA KODÓW RABATOWYCH
-        const DISCOUNT_CODES = { 
-            "LAS2024": 0.05, 
-            "START": 0.10,
-            "ZNAJOMY": 0.10  // Dodany kod
-        };
-        
+        const DISCOUNT_CODES = { "LAS2024": 0.05, "START": 0.10, "ZNAJOMY": 0.10 };
         let currentDiscount = 0;
+
+        function parsePrice(priceString) {
+            if (!priceString) return 0;
+            let cleanString = priceString.toString().replace(/zł/g, '').replace(/,/g, '.').trim();
+            return parseFloat(cleanString) || 0;
+        }
 
         Papa.parse(SHEET_URL, {
             download: true,
             header: true,
             complete: function(results) {
+                if(results.data.length === 0) {
+                     document.getElementById('products-container').innerHTML = '<p class="text-red-500 text-center font-bold">Arkusz jest pusty lub błąd odczytu.</p>';
+                     return;
+                }
                 renderProducts(results.data);
             },
             error: function(err) {
-                console.error(err);
-                document.getElementById('products-container').innerHTML = '<p class="text-red-500 text-center">Błąd ładowania oferty.</p>';
+                console.error("Błąd PapaParse:", err);
+                document.getElementById('products-container').innerHTML = '<div class="text-center text-red-600 font-bold">Błąd ładowania oferty.</div>';
             }
         });
 
@@ -136,14 +134,10 @@
                 
                 const unit = item['Jednostka'] || 'kg';
                 const step = unit.toLowerCase().includes('szt') ? 1 : 0.1;
-
                 const expiry = item['Ważność'];
-                const expiryHtml = expiry 
-                    ? `<p class="text-xs text-amber-700 mt-1 font-semibold">⏳ Ważność: ${expiry}</p>` 
-                    : '';
-
+                const expiryHtml = expiry ? `<p class="text-xs text-amber-700 mt-1 font-semibold">⏳ Ważność: ${expiry}</p>` : '';
                 const sklad = item['Skład'] || '';
-                const cena = item['Cena'];
+                const cena = parsePrice(item['Cena']);
                 const opis = item['Opis'] || '';
                 const nazwa = item['Nazwa'];
 
@@ -156,25 +150,29 @@
                         <p class="text-sm text-gray-600 mt-1">${opis}</p>
                         <p class="text-xs italic text-gray-400 mt-1">Skład: ${sklad}</p>
                         ${expiryHtml}
-                        <span class="text-green-700 font-bold mt-2 block price" data-price="${cena}">
-                            ${cena} zł / ${unit}
+                        <span class="text-gray-500 text-sm mt-2 block price" data-price="${cena}">
+                            Cena jedn.: ${cena.toFixed(2)} zł / ${unit}
                         </span>
                     </div>
                     
-                    <div class="flex items-center bg-gray-50 p-2 rounded-lg self-start sm:self-center mt-2 sm:mt-0">
-                        <button type="button" onclick="changeQty(${index}, -${step})" class="w-10 h-10 flex items-center justify-center bg-white border rounded hover:bg-gray-100 text-xl font-bold text-gray-600 shadow-sm">-</button>
-                        
-                        <input type="number" 
-                               min="0" 
-                               step="${step}" 
-                               placeholder="0" 
-                               id="qty-${index}"
-                               class="qty-input w-20 p-2 mx-2 text-center bg-transparent border-b outline-none font-bold text-lg" 
-                               name="${nazwa}"
-                               data-unit="${unit}"
-                               oninput="calculateTotal()">
-                        
-                        <button type="button" onclick="changeQty(${index}, ${step})" class="w-10 h-10 flex items-center justify-center bg-white border rounded hover:bg-gray-100 text-xl font-bold text-gray-600 shadow-sm">+</button>
+                    <div class="flex flex-col items-end sm:items-center mt-2 sm:mt-0">
+                        <div class="flex items-center bg-gray-50 p-2 rounded-lg">
+                            <button type="button" onclick="changeQty(${index}, -${step})" class="w-10 h-10 flex items-center justify-center bg-white border rounded hover:bg-gray-100 text-xl font-bold text-gray-600 shadow-sm">-</button>
+                            
+                            <input type="number" 
+                                min="0" 
+                                step="${step}" 
+                                placeholder="0" 
+                                id="qty-${index}"
+                                class="qty-input w-20 p-2 mx-2 text-center bg-transparent border-b outline-none font-bold text-lg" 
+                                name="${nazwa}"
+                                data-unit="${unit}"
+                                oninput="calculateTotal()">
+                            
+                            <button type="button" onclick="changeQty(${index}, ${step})" class="w-10 h-10 flex items-center justify-center bg-white border rounded hover:bg-gray-100 text-xl font-bold text-gray-600 shadow-sm">+</button>
+                        </div>
+                        <!-- Tutaj pojawi się cena za wybrany produkt -->
+                        <p id="line-total-${index}" class="text-sm font-bold text-green-700 mt-2 opacity-0 transition-opacity duration-200">0.00 zł</p>
                     </div>
                 </div>`;
                 
@@ -195,10 +193,27 @@
             let total = 0;
             document.querySelectorAll('.product-item').forEach((item) => {
                 if (item.classList.contains('out-of-stock')) return;
+                
+                const index = item.dataset.index;
                 const price = parseFloat(item.querySelector('.price').dataset.price);
                 const input = item.querySelector('.qty-input');
                 const qty = parseFloat(input.value) || 0;
-                total += price * qty;
+                
+                // Obliczanie wartości dla konkretnego wiersza
+                const lineTotal = price * qty;
+                const lineTotalEl = document.getElementById(`line-total-${index}`);
+                
+                // Aktualizacja wyświetlania ceny pojedynczego produktu
+                if(lineTotalEl) {
+                    if (qty > 0) {
+                        lineTotalEl.textContent = lineTotal.toFixed(2) + ' zł';
+                        lineTotalEl.classList.remove('opacity-0');
+                    } else {
+                        lineTotalEl.classList.add('opacity-0');
+                    }
+                }
+
+                total += lineTotal;
             });
 
             if (currentDiscount > 0) {
@@ -231,13 +246,18 @@
             let hasProducts = false;
 
             document.querySelectorAll('.product-item').forEach((item) => {
+                const index = item.dataset.index;
                 const input = item.querySelector('.qty-input');
                 const qty = parseFloat(input.value) || 0;
+                
                 if(qty > 0) {
                     hasProducts = true;
                     const name = item.querySelector('h3').textContent.trim().replace('(Wyprzedane)', '');
                     const unit = input.dataset.unit;
-                    orderSummary += `${name}: ${qty} ${unit}\n`;
+                    // Pobieramy wyliczoną cenę za linię
+                    const linePrice = document.getElementById(`line-total-${index}`).textContent;
+                    
+                    orderSummary += `${name}: ${qty} ${unit} (Kwota: ${linePrice})\n`;
                 }
             });
 
@@ -260,7 +280,6 @@
                 discount_info: currentDiscount > 0 ? "TAK" : "NIE"
             };
 
-            // PAMIĘTAJ: WPISZ SWOJE SERVICE ID I TEMPLATE ID
             emailjs.send('YOUR_SERVICE_ID', 'YOUR_TEMPLATE_ID', templateParams)
                 .then(() => {
                     status.classList.remove('hidden');
