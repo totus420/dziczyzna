@@ -46,14 +46,25 @@
                 <p class="text-center text-gray-500 py-10">Ładowanie oferty z arkusza...</p>
             </div>
 
+            <!-- Kody rabatowe -->
             <div class="mt-8 flex items-center justify-end gap-2">
                 <input type="text" id="discount-code" placeholder="Kod rabatowy" class="p-2 border rounded text-sm w-40 uppercase">
                 <button type="button" onclick="applyDiscount()" class="bg-gray-200 hover:bg-gray-300 px-4 py-2 rounded text-sm font-bold">Użyj</button>
             </div>
             <p id="discount-message" class="text-right text-xs mt-1 text-green-600 font-bold h-4"></p>
 
-            <div class="bg-gray-100 p-4 rounded mt-4 text-right">
-                <span class="text-xl">Suma orientacyjna: <strong id="total-price" class="accent-text">0.00 zł</strong></span>
+            <!-- PODSUMOWANIE KOSZYKA I SUMA -->
+            <div class="bg-gray-100 p-6 rounded-lg mt-4 shadow-inner">
+                <h3 class="font-bold text-gray-700 border-b pb-2 mb-2">Twój koszyk:</h3>
+                
+                <!-- Tu dynamicznie wpadną produkty -->
+                <div id="cart-summary-list" class="text-sm space-y-2 mb-4 text-gray-600">
+                    <p class="italic text-gray-400">Brak produktów.</p>
+                </div>
+
+                <div class="text-right border-t pt-4">
+                    <span class="text-xl">Do zapłaty (orientacyjnie): <strong id="total-price" class="accent-text text-2xl">0.00 zł</strong></span>
+                </div>
             </div>
 
             <h2 class="text-2xl font-serif mt-10 mb-6 border-b pb-2 accent-text">2. Dane do dostawy</h2>
@@ -92,7 +103,7 @@
     </footer>
 
     <script>
-        // === TWÓJ LINK ARKUSZA ===
+        // === TWÓJ LINK DO CSV ===
         const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSFPe99P7zAoHCVOezMhJPVMIwXJyaIl4MkHj8phq7Tq3ECF-e_5JXGYy2y3XP2GDO290G3djadkkPr/pub?output=csv'; 
         
         const DISCOUNT_CODES = { "LAS2024": 0.05, "START": 0.10, "ZNAJOMY": 0.10 };
@@ -171,7 +182,7 @@
                             
                             <button type="button" onclick="changeQty(${index}, ${step})" class="w-10 h-10 flex items-center justify-center bg-white border rounded hover:bg-gray-100 text-xl font-bold text-gray-600 shadow-sm">+</button>
                         </div>
-                        <!-- Tutaj pojawi się cena za wybrany produkt -->
+                        <!-- Cena jednostkowa dynamiczna -->
                         <p id="line-total-${index}" class="text-sm font-bold text-green-700 mt-2 opacity-0 transition-opacity duration-200">0.00 zł</p>
                     </div>
                 </div>`;
@@ -191,23 +202,36 @@
 
         window.calculateTotal = function() {
             let total = 0;
+            const cartSummary = document.getElementById('cart-summary-list');
+            let summaryHTML = '';
+            let hasItems = false;
+
             document.querySelectorAll('.product-item').forEach((item) => {
                 if (item.classList.contains('out-of-stock')) return;
                 
                 const index = item.dataset.index;
+                const name = item.querySelector('h3').textContent.trim().replace('(Wyprzedane)', '');
                 const price = parseFloat(item.querySelector('.price').dataset.price);
                 const input = item.querySelector('.qty-input');
+                const unit = input.dataset.unit;
                 const qty = parseFloat(input.value) || 0;
                 
-                // Obliczanie wartości dla konkretnego wiersza
                 const lineTotal = price * qty;
                 const lineTotalEl = document.getElementById(`line-total-${index}`);
                 
-                // Aktualizacja wyświetlania ceny pojedynczego produktu
+                // Aktualizacja ceny pod produktem
                 if(lineTotalEl) {
                     if (qty > 0) {
                         lineTotalEl.textContent = lineTotal.toFixed(2) + ' zł';
                         lineTotalEl.classList.remove('opacity-0');
+                        
+                        // Dodanie do podsumowania koszyka
+                        hasItems = true;
+                        summaryHTML += `
+                        <div class="flex justify-between items-center border-b border-gray-200 border-dashed pb-1 last:border-0">
+                            <span>${name} <span class="text-xs text-gray-500">(${qty} ${unit})</span></span>
+                            <span class="font-semibold">${lineTotal.toFixed(2)} zł</span>
+                        </div>`;
                     } else {
                         lineTotalEl.classList.add('opacity-0');
                     }
@@ -216,9 +240,25 @@
                 total += lineTotal;
             });
 
-            if (currentDiscount > 0) {
-                total = total - (total * currentDiscount);
+            // Obsługa rabatu w podsumowaniu
+            let discountAmount = 0;
+            if (currentDiscount > 0 && total > 0) {
+                discountAmount = total * currentDiscount;
+                summaryHTML += `
+                <div class="flex justify-between items-center text-green-700 mt-2 pt-2 border-t">
+                    <span>Rabat (${currentDiscount * 100}%)</span>
+                    <span class="font-bold">-${discountAmount.toFixed(2)} zł</span>
+                </div>`;
+                total = total - discountAmount;
             }
+
+            // Wyświetlanie podsumowania
+            if (hasItems) {
+                cartSummary.innerHTML = summaryHTML;
+            } else {
+                cartSummary.innerHTML = '<p class="italic text-gray-400">Wybierz produkty powyżej, aby zobaczyć podsumowanie.</p>';
+            }
+
             document.getElementById('total-price').textContent = total.toFixed(2) + ' zł';
         }
 
@@ -245,6 +285,7 @@
             let orderSummary = "";
             let hasProducts = false;
 
+            // Zbieramy dane do maila
             document.querySelectorAll('.product-item').forEach((item) => {
                 const index = item.dataset.index;
                 const input = item.querySelector('.qty-input');
@@ -254,10 +295,9 @@
                     hasProducts = true;
                     const name = item.querySelector('h3').textContent.trim().replace('(Wyprzedane)', '');
                     const unit = input.dataset.unit;
-                    // Pobieramy wyliczoną cenę za linię
                     const linePrice = document.getElementById(`line-total-${index}`).textContent;
                     
-                    orderSummary += `${name}: ${qty} ${unit} (Kwota: ${linePrice})\n`;
+                    orderSummary += `${name}: ${qty} ${unit} (Razem: ${linePrice})\n`;
                 }
             });
 
