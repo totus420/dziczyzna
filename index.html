@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Szlachetna Dziczyzna - Zamówienie</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+    <script type="text/javascript">
+       (function(){
+          // PAMIĘTAJ: TU WPISZ SWÓJ PUBLIC KEY Z EMAILJS
+          emailjs.init("TWOJ_PUBLIC_KEY_EMAILJS");
+       })();
+    </script>
+    <style>
+        body { background-color: #fdfbf7; color: #2c3e50; }
+        .accent-bg { background-color: #3f4f3a; }
+        .accent-text { color: #3f4f3a; }
+        .out-of-stock { opacity: 0.5; pointer-events: none; filter: grayscale(100%); }
+        input[type=number]::-webkit-inner-spin-button, 
+        input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+    </style>
+</head>
+<body class="font-sans antialiased pb-20">
+
+    <header class="accent-bg text-white py-10 text-center shadow-md">
+        <h1 class="text-4xl font-serif font-bold">Szlachetna Dziczyzna</h1>
+        <p class="mt-2 text-lg opacity-90">Manufaktura wyrobów z lasu</p>
+    </header>
+
+    <div class="max-w-3xl mx-auto p-6 bg-white shadow-lg mt-[-30px] rounded-lg relative z-10">
+        
+        <form id="order-form" onsubmit="sendOrder(event)">
+            
+            <!-- Ważne informacje (Tylko waga) -->
+            <div class="mb-8">
+                <div class="bg-amber-50 border-l-4 border-amber-600 p-4 text-sm text-amber-900">
+                    <p class="font-bold">⚖️ Informacja o wadze:</p>
+                    <p>Waga produktów jest orientacyjna (+/- 10%). Dokładną kwotę podamy po zważeniu paczki.</p>
+                </div>
+            </div>
+
+            <h2 class="text-2xl font-serif mb-6 border-b pb-2 accent-text">1. Wybierz produkty</h2>
+            
+            <div class="space-y-6" id="products-container">
+                <p class="text-center text-gray-500 py-10">Ładowanie oferty z arkusza...</p>
+            </div>
+
+            <!-- Kody rabatowe -->
+            <div class="mt-8 flex items-center justify-end gap-2">
+                <input type="text" id="discount-code" placeholder="Kod rabatowy" class="p-2 border rounded text-sm w-40 uppercase">
+                <button type="button" onclick="applyDiscount()" class="bg-gray-200 hover:bg-gray-300 px-4 py-2 rounded text-sm font-bold">Użyj</button>
+            </div>
+            <p id="discount-message" class="text-right text-xs mt-1 text-green-600 font-bold h-4"></p>
+
+            <!-- Podsumowanie -->
+            <div class="bg-gray-100 p-4 rounded mt-4 text-right">
+                <span class="text-xl">Suma orientacyjna: <strong id="total-price" class="accent-text">0.00 zł</strong></span>
+            </div>
+
+            <!-- SEKCJA DOSTAWY -->
+            <h2 class="text-2xl font-serif mt-10 mb-6 border-b pb-2 accent-text">2. Dane do dostawy</h2>
+            
+            <!-- Info o dostawie przeniesione tutaj -->
+            <div class="bg-green-50 border-l-4 border-green-700 p-4 mb-6 text-sm text-green-900">
+                <p class="font-bold">🚚 Dostawa:</p>
+                <p>Realizujemy wyłącznie <strong>dostawy osobiste</strong>. Rozwozimy zamówienia w każdy <strong>CZWARTEK</strong>.</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <input type="text" name="imie_nazwisko" placeholder="Imię i Nazwisko" required class="p-3 border rounded w-full">
+                <input type="tel" name="telefon" placeholder="Numer telefonu" required class="p-3 border rounded w-full">
+                <input type="email" name="email" placeholder="Adres Email" required class="p-3 border rounded w-full md:col-span-2">
+                <input type="text" name="miasto" placeholder="Miejscowość" required class="p-3 border rounded w-full">
+                <input type="text" name="ulica" placeholder="Ulica i numer domu" required class="p-3 border rounded w-full">
+                <textarea name="uwagi" placeholder="Uwagi (np. kod do domofonu)" class="p-3 border rounded w-full md:col-span-2" rows="2"></textarea>
+            </div>
+
+            <div class="mt-6 text-sm text-gray-600">
+                <label class="flex items-start gap-2">
+                    <input type="checkbox" required class="mt-1">
+                    <span>Wyrażam zgodę na realizację zamówienia i akceptuję termin dostawy (Czwartek).</span>
+                </label>
+            </div>
+
+            <button type="submit" id="submit-btn" class="w-full accent-bg text-white font-bold py-4 rounded mt-8 hover:opacity-90 transition text-lg shadow-lg">
+                Złóż zamówienie
+            </button>
+            <p id="status-msg" class="text-center mt-4 hidden"></p>
+
+        </form>
+    </div>
+
+    <footer class="text-center text-gray-500 text-sm pb-10">
+        <p>&copy; 2024 Szlachetna Dziczyzna. RHD Wet. Nr: XXXXXXXX</p>
+    </footer>
+
+    <script>
+        // === TWÓJ LINK ARKUSZA ===
+        const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSFPe99P7zAoHCVOezMhJPVMIwXJyaIl4MkHj8phq7Tq3ECF-e_5JXGYy2y3XP2GDO290G3djadkkPr/pub?output=csv'; 
+        // ========================
+        
+        // KONFIGURACJA KODÓW RABATOWYCH
+        const DISCOUNT_CODES = { 
+            "LAS2024": 0.05, 
+            "START": 0.10,
+            "ZNAJOMY": 0.10  // Dodany kod
+        };
+        
+        let currentDiscount = 0;
+
+        Papa.parse(SHEET_URL, {
+            download: true,
+            header: true,
+            complete: function(results) {
+                renderProducts(results.data);
+            },
+            error: function(err) {
+                console.error(err);
+                document.getElementById('products-container').innerHTML = '<p class="text-red-500 text-center">Błąd ładowania oferty.</p>';
+            }
+        });
+
+        function renderProducts(data) {
+            const container = document.getElementById('products-container');
+            container.innerHTML = '';
+
+            data.forEach((item, index) => {
+                if (!item['Nazwa']) return; 
+
+                const stock = parseFloat(item['Dostępność']);
+                const isAvailable = stock > 0;
+                const disabledClass = isAvailable ? '' : 'out-of-stock';
+                const statusText = isAvailable ? '' : '<span class="text-red-600 font-bold text-sm ml-2">(Wyprzedane)</span>';
+                
+                const unit = item['Jednostka'] || 'kg';
+                const step = unit.toLowerCase().includes('szt') ? 1 : 0.1;
+
+                const expiry = item['Ważność'];
+                const expiryHtml = expiry 
+                    ? `<p class="text-xs text-amber-700 mt-1 font-semibold">⏳ Ważność: ${expiry}</p>` 
+                    : '';
+
+                const sklad = item['Skład'] || '';
+                const cena = item['Cena'];
+                const opis = item['Opis'] || '';
+                const nazwa = item['Nazwa'];
+
+                const html = `
+                <div class="flex flex-col sm:flex-row justify-between sm:items-start border-b pb-6 product-item ${disabledClass}" data-index="${index}">
+                    <div class="mb-4 sm:mb-0 max-w-md pr-4">
+                        <h3 class="font-bold text-lg text-gray-800 flex items-center">
+                            ${nazwa} ${statusText}
+                        </h3>
+                        <p class="text-sm text-gray-600 mt-1">${opis}</p>
+                        <p class="text-xs italic text-gray-400 mt-1">Skład: ${sklad}</p>
+                        ${expiryHtml}
+                        <span class="text-green-700 font-bold mt-2 block price" data-price="${cena}">
+                            ${cena} zł / ${unit}
+                        </span>
+                    </div>
+                    
+                    <div class="flex items-center bg-gray-50 p-2 rounded-lg self-start sm:self-center mt-2 sm:mt-0">
+                        <button type="button" onclick="changeQty(${index}, -${step})" class="w-10 h-10 flex items-center justify-center bg-white border rounded hover:bg-gray-100 text-xl font-bold text-gray-600 shadow-sm">-</button>
+                        
+                        <input type="number" 
+                               min="0" 
+                               step="${step}" 
+                               placeholder="0" 
+                               id="qty-${index}"
+                               class="qty-input w-20 p-2 mx-2 text-center bg-transparent border-b outline-none font-bold text-lg" 
+                               name="${nazwa}"
+                               data-unit="${unit}"
+                               oninput="calculateTotal()">
+                        
+                        <button type="button" onclick="changeQty(${index}, ${step})" class="w-10 h-10 flex items-center justify-center bg-white border rounded hover:bg-gray-100 text-xl font-bold text-gray-600 shadow-sm">+</button>
+                    </div>
+                </div>`;
+                
+                container.insertAdjacentHTML('beforeend', html);
+            });
+        }
+
+        window.changeQty = function(index, delta) {
+            const input = document.getElementById(`qty-${index}`);
+            let val = parseFloat(input.value) || 0;
+            val += delta;
+            if (val < 0) val = 0;
+            input.value = Math.round(val * 10) / 10;
+            calculateTotal();
+        }
+
+        window.calculateTotal = function() {
+            let total = 0;
+            document.querySelectorAll('.product-item').forEach((item) => {
+                if (item.classList.contains('out-of-stock')) return;
+                const price = parseFloat(item.querySelector('.price').dataset.price);
+                const input = item.querySelector('.qty-input');
+                const qty = parseFloat(input.value) || 0;
+                total += price * qty;
+            });
+
+            if (currentDiscount > 0) {
+                total = total - (total * currentDiscount);
+            }
+            document.getElementById('total-price').textContent = total.toFixed(2) + ' zł';
+        }
+
+        window.applyDiscount = function() {
+            const codeInput = document.getElementById('discount-code').value.toUpperCase();
+            const msg = document.getElementById('discount-message');
+            if (DISCOUNT_CODES[codeInput]) {
+                currentDiscount = DISCOUNT_CODES[codeInput];
+                msg.textContent = `Kod aktywny! -${currentDiscount * 100}%`;
+                msg.className = "text-right text-xs mt-1 text-green-600 font-bold h-4";
+            } else {
+                currentDiscount = 0;
+                msg.textContent = "Błędny kod.";
+                msg.className = "text-right text-xs mt-1 text-red-500 font-bold h-4";
+            }
+            calculateTotal();
+        }
+
+        window.sendOrder = function(e) {
+            e.preventDefault();
+            const btn = document.getElementById('submit-btn');
+            const status = document.getElementById('status-msg');
+            
+            let orderSummary = "";
+            let hasProducts = false;
+
+            document.querySelectorAll('.product-item').forEach((item) => {
+                const input = item.querySelector('.qty-input');
+                const qty = parseFloat(input.value) || 0;
+                if(qty > 0) {
+                    hasProducts = true;
+                    const name = item.querySelector('h3').textContent.trim().replace('(Wyprzedane)', '');
+                    const unit = input.dataset.unit;
+                    orderSummary += `${name}: ${qty} ${unit}\n`;
+                }
+            });
+
+            if(!hasProducts) { alert("Wybierz produkty."); return; }
+
+            btn.disabled = true;
+            btn.textContent = "Wysyłanie...";
+
+            const form = document.forms['order-form'];
+            const templateParams = {
+                to_name: "Sprzedawca",
+                customer_name: form.imie_nazwisko.value,
+                customer_email: form.email.value,
+                phone: form.telefon.value,
+                delivery_method: "Dostawa Osobista (Czwartek)", 
+                address: `${form.ulica.value}, ${form.miasto.value}`,
+                notes: form.uwagi.value,
+                order_details: orderSummary,
+                total_price: document.getElementById('total-price').innerText,
+                discount_info: currentDiscount > 0 ? "TAK" : "NIE"
+            };
+
+            // PAMIĘTAJ: WPISZ SWOJE SERVICE ID I TEMPLATE ID
+            emailjs.send('YOUR_SERVICE_ID', 'YOUR_TEMPLATE_ID', templateParams)
+                .then(() => {
+                    status.classList.remove('hidden');
+                    status.className = "text-center mt-4 text-green-700 font-bold p-4 bg-green-50 rounded";
+                    status.innerHTML = "✅ Zamówienie wysłane!<br>Sprawdź maila (również SPAM).";
+                    btn.style.display = 'none';
+                }, (err) => {
+                    console.error(err);
+                    status.textContent = "Błąd wysyłki. Spróbuj ponownie.";
+                    status.classList.remove('hidden');
+                    btn.disabled = false;
+                });
+        }
+    </script>
+</body>
+</html>
