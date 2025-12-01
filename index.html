@@ -13,15 +13,16 @@
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
     <script type="text/javascript">
        (function(){
-          // >>> TUTAJ WKLEJ SWÓJ PUBLIC KEY Z ZAKŁADKI "ACCOUNT" NA EMAILJS <<<
+          // Twoje ustawione ID - nie zmieniaj
           emailjs.init("zX_JndIVFBCrktjp8"); 
        })();
     </script>
 
-    <!-- Ustawienia dla Facebooka / Messengera (Wygląd linku) -->
+    <!-- Ustawienia dla Facebooka / Messengera -->
     <meta property="og:title" content="Szlachetna Dziczyzna - Zamówienia na Czwartek" />
     <meta property="og:description" content="Świeże wyroby prosto z lasu. Sprawdź ofertę i zamów z dostawą osobistą." />
-    <meta property="og:image" content="WKLEJ_LINK_DO_ZDJECIA_JPG" />
+    <!-- Jeśli masz link do zdjęcia, wklej go w content="" poniżej -->
+    <meta property="og:image" content="" />
     <meta property="og:type" content="website" />
 
     <style>
@@ -113,8 +114,15 @@
     </footer>
 
     <script>
-        // === LINK DO ARKUSZA (To już jest ustawione poprawnie) ===
+        // === KONFIGURACJA ===
         const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSFPe99P7zAoHCVOezMhJPVMIwXJyaIl4MkHj8phq7Tq3ECF-e_5JXGYy2y3XP2GDO290G3djadkkPr/pub?output=csv'; 
+        
+        // Twój link do Google Apps Script (zapisywanie zamówień)
+        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxBQQjnvZOzieJdso7s8NxY7w0CkkKFDAtKgRsOHi1vntyOHpcULkv-HXSitW_k__37/exec";
+        
+        // Twoje dane EmailJS (już wpisane)
+        const EMAILJS_SERVICE = "service_5g54m0r";
+        const EMAILJS_TEMPLATE = "template_5gttgro";
         
         const DISCOUNT_CODES = { "LAS2024": 0.05, "START": 0.10, "ZNAJOMY": 0.10 };
         let currentDiscount = 0;
@@ -305,35 +313,59 @@
             if(!hasProducts) { alert("Wybierz produkty."); return; }
 
             btn.disabled = true;
-            btn.textContent = "Wysyłanie...";
+            btn.textContent = "Zapisywanie zamówienia...";
 
             const form = document.forms['order-form'];
-            const templateParams = {
+            const addressFull = `${form.ulica.value}, ${form.miasto.value}`;
+            const totalPrice = document.getElementById('total-price').innerText;
+
+            const orderData = {
+                // Pola dla Arkusza Google
+                imie_nazwisko: form.imie_nazwisko.value,
+                email: form.email.value,
+                telefon: form.telefon.value,
+                adres: addressFull,
+                uwagi: form.uwagi.value,
+                szczegoly: orderSummary,
+                kwota: totalPrice,
+                
+                // Pola dla EmailJS
                 to_name: "Sprzedawca",
                 customer_name: form.imie_nazwisko.value,
                 customer_email: form.email.value,
                 phone: form.telefon.value,
                 delivery_method: "Dostawa Osobista (Czwartek)", 
-                address: `${form.ulica.value}, ${form.miasto.value}`,
+                address: addressFull,
                 notes: form.uwagi.value,
                 order_details: orderSummary,
-                total_price: document.getElementById('total-price').innerText,
+                total_price: totalPrice,
                 discount_info: currentDiscount > 0 ? "TAK" : "NIE"
             };
 
-            // >>> TUTAJ WKLEJ SWOJE ID Z EMAILJS <<<
-            emailjs.send('service_5g54m0r', 'template_5gttgro', templateParams)
-                .then(() => {
-                    status.classList.remove('hidden');
-                    status.className = "text-center mt-4 text-green-700 font-bold p-4 bg-green-50 rounded";
-                    status.innerHTML = "✅ Zamówienie wysłane!<br>Sprawdź maila (również SPAM).";
-                    btn.style.display = 'none';
-                }, (err) => {
-                    console.error(err);
-                    status.textContent = "Błąd wysyłki. Spróbuj ponownie.";
-                    status.classList.remove('hidden');
-                    btn.disabled = false;
-                });
+            // KROK 1: WYSYŁKA DO GOOGLE SHEETS
+            fetch(GOOGLE_SCRIPT_URL, {
+                method: "POST",
+                mode: "no-cors",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(orderData)
+            })
+            .then(() => {
+                // KROK 2: WYSYŁKA MAILA (EmailJS)
+                return emailjs.send(EMAILJS_SERVICE, EMAILJS_TEMPLATE, orderData);
+            })
+            .then(() => {
+                status.classList.remove('hidden');
+                status.className = "text-center mt-4 text-green-700 font-bold p-4 bg-green-50 rounded";
+                status.innerHTML = "✅ Zamówienie przyjęte!<br>Zapisano w systemie i wysłano potwierdzenie.";
+                btn.style.display = 'none';
+            })
+            .catch((err) => {
+                console.error("Błąd:", err);
+                status.textContent = "Wystąpił błąd. Skontaktuj się z nami telefonicznie.";
+                status.classList.remove('hidden');
+                btn.disabled = false;
+                btn.textContent = "Spróbuj ponownie";
+            });
         }
     </script>
 </body>
