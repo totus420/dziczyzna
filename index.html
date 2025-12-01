@@ -3,16 +3,27 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Szlachetna Dziczyzna - Zamówienie</title>
+    <title>Szlachetna Dziczyzna - Zamówienia Online</title>
+    
+    <!-- Ikonka dzika w przeglądarce -->
+    <link rel="icon" href="https://fav.farm/🐗" />
+
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
     <script type="text/javascript">
        (function(){
-          // PAMIĘTAJ: TU WPISZ SWÓJ PUBLIC KEY Z EMAILJS
-          emailjs.init("TWOJ_PUBLIC_KEY_EMAILJS");
+          // >>> TUTAJ WKLEJ SWÓJ PUBLIC KEY Z ZAKŁADKI "ACCOUNT" NA EMAILJS <<<
+          emailjs.init(zX_JndIVFBCrktjp8); 
        })();
     </script>
+
+    <!-- Ustawienia dla Facebooka / Messengera (Wygląd linku) -->
+    <meta property="og:title" content="Szlachetna Dziczyzna - Zamówienia na Czwartek" />
+    <meta property="og:description" content="Świeże wyroby prosto z lasu. Sprawdź ofertę i zamów z dostawą osobistą." />
+    <meta property="og:image" content="WKLEJ_LINK_DO_ZDJECIA_JPG" />
+    <meta property="og:type" content="website" />
+
     <style>
         body { background-color: #fdfbf7; color: #2c3e50; }
         .accent-bg { background-color: #3f4f3a; }
@@ -53,11 +64,10 @@
             </div>
             <p id="discount-message" class="text-right text-xs mt-1 text-green-600 font-bold h-4"></p>
 
-            <!-- PODSUMOWANIE KOSZYKA I SUMA -->
+            <!-- PODSUMOWANIE KOSZYKA -->
             <div class="bg-gray-100 p-6 rounded-lg mt-4 shadow-inner">
                 <h3 class="font-bold text-gray-700 border-b pb-2 mb-2">Twój koszyk:</h3>
                 
-                <!-- Tu dynamicznie wpadną produkty -->
                 <div id="cart-summary-list" class="text-sm space-y-2 mb-4 text-gray-600">
                     <p class="italic text-gray-400">Brak produktów.</p>
                 </div>
@@ -103,7 +113,7 @@
     </footer>
 
     <script>
-        // === TWÓJ LINK DO CSV ===
+        // === LINK DO ARKUSZA (To już jest ustawione poprawnie) ===
         const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSFPe99P7zAoHCVOezMhJPVMIwXJyaIl4MkHj8phq7Tq3ECF-e_5JXGYy2y3XP2GDO290G3djadkkPr/pub?output=csv'; 
         
         const DISCOUNT_CODES = { "LAS2024": 0.05, "START": 0.10, "ZNAJOMY": 0.10 };
@@ -182,7 +192,6 @@
                             
                             <button type="button" onclick="changeQty(${index}, ${step})" class="w-10 h-10 flex items-center justify-center bg-white border rounded hover:bg-gray-100 text-xl font-bold text-gray-600 shadow-sm">+</button>
                         </div>
-                        <!-- Cena jednostkowa dynamiczna -->
                         <p id="line-total-${index}" class="text-sm font-bold text-green-700 mt-2 opacity-0 transition-opacity duration-200">0.00 zł</p>
                     </div>
                 </div>`;
@@ -219,13 +228,10 @@
                 const lineTotal = price * qty;
                 const lineTotalEl = document.getElementById(`line-total-${index}`);
                 
-                // Aktualizacja ceny pod produktem
                 if(lineTotalEl) {
                     if (qty > 0) {
                         lineTotalEl.textContent = lineTotal.toFixed(2) + ' zł';
                         lineTotalEl.classList.remove('opacity-0');
-                        
-                        // Dodanie do podsumowania koszyka
                         hasItems = true;
                         summaryHTML += `
                         <div class="flex justify-between items-center border-b border-gray-200 border-dashed pb-1 last:border-0">
@@ -236,11 +242,9 @@
                         lineTotalEl.classList.add('opacity-0');
                     }
                 }
-
                 total += lineTotal;
             });
 
-            // Obsługa rabatu w podsumowaniu
             let discountAmount = 0;
             if (currentDiscount > 0 && total > 0) {
                 discountAmount = total * currentDiscount;
@@ -252,7 +256,6 @@
                 total = total - discountAmount;
             }
 
-            // Wyświetlanie podsumowania
             if (hasItems) {
                 cartSummary.innerHTML = summaryHTML;
             } else {
@@ -285,7 +288,6 @@
             let orderSummary = "";
             let hasProducts = false;
 
-            // Zbieramy dane do maila
             document.querySelectorAll('.product-item').forEach((item) => {
                 const index = item.dataset.index;
                 const input = item.querySelector('.qty-input');
@@ -296,7 +298,6 @@
                     const name = item.querySelector('h3').textContent.trim().replace('(Wyprzedane)', '');
                     const unit = input.dataset.unit;
                     const linePrice = document.getElementById(`line-total-${index}`).textContent;
-                    
                     orderSummary += `${name}: ${qty} ${unit} (Razem: ${linePrice})\n`;
                 }
             });
@@ -320,7 +321,8 @@
                 discount_info: currentDiscount > 0 ? "TAK" : "NIE"
             };
 
-            emailjs.send('YOUR_SERVICE_ID', 'YOUR_TEMPLATE_ID', templateParams)
+            // >>> TUTAJ WKLEJ SWOJE ID Z EMAILJS <<<
+            emailjs.send('service_5g54m0r', 'template_5gttgro', templateParams)
                 .then(() => {
                     status.classList.remove('hidden');
                     status.className = "text-center mt-4 text-green-700 font-bold p-4 bg-green-50 rounded";
