@@ -137,11 +137,15 @@
         function sanitizeQtyInput(input) {
             const step = parseFloat(input.step) || 0.1;
             const decimals = (step.toString().split('.')[1] || '').length;
+            const maxStock = isFinite(parseFloat(input.dataset.stock)) ? parseFloat(input.dataset.stock) : null;
             let val = parseFloat(input.value) || 0;
             val = Math.max(0, val);
+            if (maxStock !== null) val = Math.min(val, maxStock);
             const rounded = decimals === 0 ? Math.round(val) : Math.round(val / step) * step;
             const fixed = decimals === 0 ? rounded : parseFloat(rounded.toFixed(decimals));
-            input.value = decimals === 0 ? String(fixed) : fixed.toFixed(decimals);
+            let finalVal = decimals === 0 ? fixed : parseFloat(fixed.toFixed(decimals));
+            if (maxStock !== null && finalVal > maxStock) finalVal = maxStock;
+            input.value = decimals === 0 ? String(finalVal) : finalVal.toFixed(decimals);
             return parseFloat(input.value) || 0;
         }
 
@@ -169,7 +173,8 @@
                 if (!item['Nazwa']) return; 
 
                 const stock = parseFloat(item['Dostępność']);
-                const isAvailable = stock > 0;
+                const maxQty = isFinite(stock) && stock > 0 ? stock : null;
+                const isAvailable = maxQty ? maxQty > 0 : stock > 0;
                 const disabledClass = isAvailable ? '' : 'out-of-stock';
                 const statusText = isAvailable ? '' : '<span class="text-red-600 font-bold text-sm ml-2">(Wyprzedane)</span>';
                 
@@ -224,6 +229,7 @@
                                 class="qty-input w-20 p-2 mx-2 text-center bg-transparent border-b outline-none font-bold text-lg" 
                                 name="${nazwa}"
                                 data-unit="${unit}"
+                                data-stock="${maxQty !== null ? maxQty : ''}"
                                 oninput="calculateTotal()">
                             
                             <button type="button" onclick="changeQty(${index}, ${step})" class="w-10 h-10 flex items-center justify-center bg-white border rounded hover:bg-gray-100 text-xl font-bold text-gray-600 shadow-sm">+</button>
