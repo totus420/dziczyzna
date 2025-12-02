@@ -66,7 +66,7 @@
             <p id="discount-message" class="text-right text-xs mt-1 text-green-600 font-bold h-4"></p>
 
             <!-- PODSUMOWANIE KOSZYKA -->
-            <div class="bg-gray-100 p-6 rounded-lg mt-4 shadow-inner">
+            <div class="bg-gray-100 p-6 rounded-lg mt-4 shadow-inner md:sticky md:top-4">
                 <h3 class="font-bold text-gray-700 border-b pb-2 mb-2">Twój koszyk:</h3>
                 
                 <div id="cart-summary-list" class="text-sm space-y-2 mb-4 text-gray-600">
@@ -83,6 +83,7 @@
             <div class="bg-green-50 border-l-4 border-green-700 p-4 mb-6 text-sm text-green-900">
                 <p class="font-bold">🚚 Dostawa:</p>
                 <p>Dostawy realizujemy <strong>wyłącznie osobiście</strong>. Zamówienia rozwozimy w każdy <strong>CZWARTEK</strong>.</p>
+                <p>Dostarczamy do 30 km od Warszawy.</p>
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -127,6 +128,7 @@
         const EMAILJS_TEMPLATE = "template_5gttgro";
         
         const DISCOUNT_CODES = { "LAS2024": 0.05, "START": 0.10, "ZNAJOMY": 0.10 };
+        const MIN_ORDER = 200; // minimalna wartość zamówienia w zł
         const REQUEST_TIMEOUT_MS = 12000;
         let currentDiscount = 0;
         let hasItemsInCart = false;
@@ -415,6 +417,17 @@
             e.preventDefault();
             const btn = document.getElementById('submit-btn');
             const status = document.getElementById('status-msg');
+            const totalText = document.getElementById('total-price').innerText || '0';
+            const totalValue = parseFloat(
+                totalText
+                    .replace('zł', '')
+                    .replace(/\s/g, '')
+                    .replace(',', '.')
+            );
+            if (isNaN(totalValue) || totalValue < MIN_ORDER) {
+                alert(`Minimalna wartość zamówienia to ${MIN_ORDER} zł.`);
+                return;
+            }
             
             clearStatus();
             if (!validateFormFields()) return;
