@@ -38,7 +38,7 @@
 
     <header class="accent-bg text-white py-12 text-center shadow-md">
         <div class="flex flex-col items-center gap-6">
-            <img src="logo2.png" alt="Szlachetna Dziczyzna" class="h-52 md:h-64 w-auto drop-shadow-lg">
+            <img src="logo2.png" alt="Szlachetna Dziczyzna" class="h-64 md:h-72 w-auto max-w-[420px] drop-shadow-lg">
             <div class="sr-only">
                 <h1>Szlachetna Dziczyzna</h1>
                 <p>Manufaktura wyrobów rzemieślniczych z polskich lasów</p>
@@ -344,7 +344,7 @@
                 const sortedItems = categories[catName].sort((a, b) => a.name.localeCompare(b.name, 'pl'));
                 let localIdx = 1;
                 const rendered = sortedItems.map(item => {
-                    const numbered = item.html.replace(/<span class="text-gray-400 mr-2">\\d+\\.<\\/span>/, `<span class="text-gray-400 mr-2">${localIdx}.<\/span>`);
+                    const numbered = item.html.replace(/<span class="text-gray-400 mr-2">.*?<\/span>/, `<span class="text-gray-400 mr-2">${localIdx}.<\/span>`);
                     localIdx += 1;
                     return numbered;
                 });
