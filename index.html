@@ -38,7 +38,7 @@
 
     <header class="accent-bg text-white py-12 text-center shadow-md">
         <div class="flex flex-col items-center gap-6">
-            <img src="logo2.png" alt="Szlachetna Dziczyzna" class="h-64 md:h-72 w-auto max-w-[420px] drop-shadow-lg">
+            <img src="logo3.png" alt="Szlachetna Dziczyzna" class="h-64 md:h-72 w-auto max-w-[480px] drop-shadow-lg">
             <div class="sr-only">
                 <h1>Szlachetna Dziczyzna</h1>
                 <p>Manufaktura wyrobów rzemieślniczych z polskich lasów</p>
@@ -120,7 +120,7 @@
     </div>
 
     <footer class="text-center text-gray-500 text-sm pb-10">
-        <p>&copy; 2024 Szlachetna Dziczyzna. RHD Wet. Nr: XXXXXXXX</p>
+        <p>&copy; 2024 Szlachetna Dziczyzna.</p>
         <p class="mt-2">W razie pytań proszę o kontakt telefoniczny: <strong>+48 791 177 777</strong>.</p>
     </footer>
 
@@ -341,7 +341,21 @@
 
             CATEGORY_ORDER.forEach((catName) => {
                 if (!categories[catName] || categories[catName].length === 0) return;
-                const sortedItems = categories[catName].sort((a, b) => a.name.localeCompare(b.name, 'pl'));
+                const sortedItems = categories[catName].sort((a, b) => {
+                    if (catName === "Kiełbasy") {
+                        const pri = (name) => {
+                            const t = name.toLowerCase();
+                            if (t.includes('parów')) return 0;
+                            if (t.includes('kielb') || t.includes('kiełb')) return 1;
+                            if (t.includes('kabanos')) return 2;
+                            return 3;
+                        };
+                        const pa = pri(a.name);
+                        const pb = pri(b.name);
+                        if (pa !== pb) return pa - pb;
+                    }
+                    return a.name.localeCompare(b.name, 'pl');
+                });
                 let localIdx = 1;
                 const rendered = sortedItems.map(item => {
                     const numbered = item.html.replace(/<span class="text-gray-400 mr-2">.*?<\/span>/, `<span class="text-gray-400 mr-2">${localIdx}.<\/span>`);
