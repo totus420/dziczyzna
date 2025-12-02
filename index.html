@@ -38,7 +38,7 @@
 
     <header class="accent-bg text-white py-12 text-center shadow-md">
         <div class="flex flex-col items-center gap-6">
-            <img src="logo.png" alt="Szlachetna Dziczyzna" class="h-52 md:h-64 w-auto drop-shadow-lg">
+            <img src="logo2.png" alt="Szlachetna Dziczyzna" class="h-52 md:h-64 w-auto drop-shadow-lg">
             <div class="sr-only">
                 <h1>Szlachetna Dziczyzna</h1>
                 <p>Manufaktura wyrobów rzemieślniczych z polskich lasów</p>
@@ -295,7 +295,7 @@
                     <div class="flex flex-col sm:flex-row gap-4 w-full pr-4">
                         <div class="flex-1 mb-4 sm:mb-0 order-1 sm:order-2">
                             <h3 class="font-bold text-lg text-gray-800 flex items-center">
-                                <span class="text-gray-400 mr-2">${productIndex + 1}.</span> ${nazwa} ${statusText}
+                                <span class="text-gray-400 mr-2">${idx}.</span> ${nazwa} ${statusText}
                             </h3>
                             <div class="mt-2 sm:hidden">
                                 ${imageBlock}
@@ -336,11 +336,18 @@
                 </div>`;
                 
                 if (!categories[category]) categories[category] = [];
-                categories[category].push(html);
+                categories[category].push({ name: nazwa, html });
             });
 
             CATEGORY_ORDER.forEach((catName) => {
                 if (!categories[catName] || categories[catName].length === 0) return;
+                const sortedItems = categories[catName].sort((a, b) => a.name.localeCompare(b.name, 'pl'));
+                let localIdx = 1;
+                const rendered = sortedItems.map(item => {
+                    const numbered = item.html.replace(/<span class="text-gray-400 mr-2">\\d+\\.<\\/span>/, `<span class="text-gray-400 mr-2">${localIdx}.<\/span>`);
+                    localIdx += 1;
+                    return numbered;
+                });
                 const sectionId = `cat-${slugifyCategory(catName)}`;
                 const sectionHtml = `
                 <div class="category-section border rounded-lg mb-4 overflow-hidden">
@@ -349,7 +356,7 @@
                         <span id="${sectionId}-chevron" class="transition-transform">▼</span>
                     </button>
                     <div id="${sectionId}" class="category-body divide-y">
-                        ${categories[catName].join('')}
+                        ${rendered.join('')}
                     </div>
                 </div>`;
                 container.insertAdjacentHTML('beforeend', sectionHtml);
