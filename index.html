@@ -38,7 +38,7 @@
 
     <header class="accent-bg text-white py-12 text-center shadow-md">
         <div class="flex flex-col items-center gap-3">
-            <img src="logo.png" alt="Szlachetna Dziczyzna" class="h-28 w-auto drop-shadow-lg">
+            <img src="logo.png" alt="Szlachetna Dziczyzna" class="h-32 md:h-40 w-auto drop-shadow-lg">
             <div class="sr-only">
                 <h1>Szlachetna Dziczyzna</h1>
                 <p>Manufaktura wyrobów rzemieślniczych z polskich lasów</p>
@@ -51,7 +51,8 @@
         <form id="order-form" onsubmit="sendOrder(event)">
             <div class="grid md:grid-cols-3 gap-6">
                 <div class="md:col-span-2">
-                    <h2 class="text-2xl font-serif mb-6 border-b pb-2 accent-text">Wybierz produkty</h2>
+                    <h2 class="text-2xl font-serif mb-2 border-b pb-2 accent-text">Wybierz produkty</h2>
+                    <p class="text-sm text-amber-800 mb-6">Minimalna wartość zamówienia: <strong>200 zł</strong>.</p>
                     
                     <div class="space-y-6" id="products-container">
                         <p class="text-center text-gray-500 py-10">Ładowanie oferty z arkusza...</p>
@@ -232,13 +233,19 @@
             }
         });
 
-        function normalizeCategory(catRaw) {
+        function normalizeCategory(catRaw, name = '', desc = '') {
             const c = (catRaw || '').toString().toLowerCase();
-            if (!c) return "Inne";
-            if (c.includes('kiełb') || c.includes('kielb')) return "Kiełbasy";
-            if (c.includes('wędlin') || c.includes('wedlin')) return "Wędliny";
-            if (c.includes('przetw')) return "Przetwory";
-            return "Inne";
+            const n = (name || '').toString().toLowerCase();
+            const d = (desc || '').toString().toLowerCase();
+
+            const matchKielbasy = (text) => text.includes('kiełb') || text.includes('kielb') || text.includes('kabanos') || text.includes('parów') || text.includes('grill');
+            const matchWedliny = (text) => text.includes('wędlin') || text.includes('wedlin') || text.includes('szynk') || text.includes('boczek') || text.includes('polęd') || text.includes('poled') || text.includes('baleron') || text.includes('schab');
+            const matchPrzetwory = (text) => text.includes('przetw') || text.includes('paszt') || text.includes('smalec') || text.includes('gulasz') || text.includes('konserw') || text.includes('bulion') || text.includes('słoik') || text.includes('sloik');
+
+            if (matchKielbasy(c) || matchKielbasy(n) || matchKielbasy(d)) return "Kiełbasy";
+            if (matchWedliny(c) || matchWedliny(n) || matchWedliny(d)) return "Wędliny";
+            if (matchPrzetwory(c) || matchPrzetwory(n) || matchPrzetwory(d)) return "Przetwory";
+            return c ? c.charAt(0).toUpperCase() + c.slice(1) : "Inne";
         }
 
         function slugifyCategory(name) {
@@ -254,7 +261,7 @@
 
             data.forEach((item) => {
                 if (!item['Nazwa']) return; 
-                const category = normalizeCategory(item['Kategoria'] || item['Kategoria (PL)'] || item['Kategoria1']);
+                const category = normalizeCategory(item['Kategoria'] || item['Kategoria (PL)'] || item['Kategoria1'], item['Nazwa'], item['Opis']);
 
                 const stock = parseFloat(item['Dostępność']);
                 const maxQty = isFinite(stock) && stock > 0 ? stock : null;
