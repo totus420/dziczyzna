@@ -182,29 +182,33 @@
                 const opis = item['Opis'] || '';
                 const nazwa = item['Nazwa'];
                 const imageUrl = item['Zdjęcie'] || item['Zdjecie'] || item['Foto'] || item['Obraz'] || '';
+                const imageBlock = imageUrl ? `
+                    <img src="${imageUrl}" alt="Zdjęcie produktu ${nazwa}" class="w-full h-32 object-cover rounded-lg border shadow-sm">
+                ` : `
+                    <div class="w-full h-32 bg-gray-100 text-gray-400 text-xs rounded-lg border flex items-center justify-center">
+                        Brak zdjęcia
+                    </div>
+                `;
 
                 const html = `
                 <div class="flex flex-col sm:flex-row justify-between sm:items-start border-b pb-6 product-item ${disabledClass}" data-index="${index}">
-                    <div class="flex gap-4 w-full pr-4">
-                        <div class="w-full sm:w-32 flex-shrink-0">
-                            ${imageUrl ? `
-                                <img src="${imageUrl}" alt="Zdjęcie produktu ${nazwa}" class="w-full h-32 object-cover rounded-lg border shadow-sm">
-                            ` : `
-                                <div class="w-full h-32 bg-gray-100 text-gray-400 text-xs rounded-lg border flex items-center justify-center">
-                                    Brak zdjęcia
-                                </div>
-                            `}
-                        </div>
-                        <div class="flex-1 mb-4 sm:mb-0">
+                    <div class="flex flex-col sm:flex-row gap-4 w-full pr-4">
+                        <div class="flex-1 mb-4 sm:mb-0 order-1 sm:order-2">
                             <h3 class="font-bold text-lg text-gray-800 flex items-center">
                                 ${nazwa} ${statusText}
                             </h3>
+                            <div class="mt-2 sm:hidden">
+                                ${imageBlock}
+                            </div>
                             <p class="text-sm text-gray-600 mt-1">${opis}</p>
                             <p class="text-xs italic text-gray-400 mt-1">Skład: ${sklad}</p>
                             ${expiryHtml}
                             <span class="text-gray-500 text-sm mt-2 block price" data-price="${cena}">
                                 Cena jedn.: ${cena.toFixed(2)} zł / ${unit}
                             </span>
+                        </div>
+                        <div class="w-full sm:w-32 flex-shrink-0 order-2 sm:order-1 hidden sm:block">
+                            ${imageBlock}
                         </div>
                     </div>
                     
