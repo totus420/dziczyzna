@@ -37,8 +37,8 @@
 <body class="font-sans antialiased pb-20">
 
     <header class="accent-bg text-white py-12 text-center shadow-md">
-        <div class="flex flex-col items-center gap-3">
-            <img src="logo.png" alt="Szlachetna Dziczyzna" class="h-32 md:h-40 w-auto drop-shadow-lg">
+        <div class="flex flex-col items-center gap-4">
+            <img src="logo.png" alt="Szlachetna Dziczyzna" class="h-40 md:h-48 w-auto drop-shadow-lg">
             <div class="sr-only">
                 <h1>Szlachetna Dziczyzna</h1>
                 <p>Manufaktura wyrobów rzemieślniczych z polskich lasów</p>
@@ -267,7 +267,8 @@
                 const maxQty = isFinite(stock) && stock > 0 ? stock : null;
                 const isAvailable = maxQty ? maxQty > 0 : stock > 0;
                 const disabledClass = isAvailable ? '' : 'out-of-stock';
-                const statusText = isAvailable ? '' : '<span class="text-red-600 font-bold text-sm ml-2">(Wyprzedane)</span>';
+                const statusText = '';
+                const soldOutNote = isAvailable ? '' : '<span class="text-xs font-bold text-red-700 mt-2 block">Wyprzedane</span>';
                 
                 const unit = item['Jednostka'] || 'kg';
                 const step = unit.toLowerCase().includes('szt') ? 1 : 0.1;
@@ -329,6 +330,7 @@
                             <button type="button" onclick="changeQty(${productIndex}, ${step})" class="w-10 h-10 flex items-center justify-center bg-white border rounded hover:bg-gray-100 text-xl font-bold text-gray-600 shadow-sm">+</button>
                         </div>
                         <p id="line-total-${productIndex}" class="text-sm font-bold text-green-700 mt-2 opacity-0 transition-opacity duration-200">0.00 zł</p>
+                        ${soldOutNote}
                         ${maxQty ? `<span class="text-xs text-amber-700 font-semibold mt-1 block">Zostało ostatnie ${maxQty} ${unit}.</span>` : ''}
                     </div>
                 </div>`;
