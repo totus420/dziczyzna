@@ -541,6 +541,7 @@
 
             let orderSummary = "";
             let hasProducts = false;
+            let lineItems = [];
 
             document.querySelectorAll('.product-item').forEach((item) => {
                 const index = item.dataset.index;
@@ -553,6 +554,7 @@
                     const unit = input.dataset.unit;
                     const linePrice = document.getElementById(`line-total-${index}`).textContent;
                     orderSummary += `${name}: ${qty} ${unit} (Razem: ${linePrice})\n`;
+                    lineItems.push({ name, qty, unit });
                 }
             });
 
@@ -578,6 +580,7 @@
                 szczegoly: orderSummary,
                 zamowienie: orderSummary,
                 kwota: totalPrice,
+                line_items: lineItems,
                 
                 // Pola dla EmailJS
                 to_name: "Sprzedawca",
