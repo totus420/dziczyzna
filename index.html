@@ -354,6 +354,18 @@
                         const pb = pri(b.name);
                         if (pa !== pb) return pa - pb;
                     }
+                    if (catName === "Wędliny") {
+                        const pri = (name) => {
+                            const t = name.toLowerCase();
+                            if (t.includes('szynk')) return 0;
+                            if (t.includes('salami')) return 1;
+                            if (t.includes('polęd') || t.includes('poled')) return 2;
+                            return 3;
+                        };
+                        const pa = pri(a.name);
+                        const pb = pri(b.name);
+                        if (pa !== pb) return pa - pb;
+                    }
                     return a.name.localeCompare(b.name, 'pl');
                 });
                 let localIdx = 1;
