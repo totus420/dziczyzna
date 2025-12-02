@@ -125,12 +125,24 @@
         const EMAILJS_TEMPLATE = "template_5gttgro";
         
         const DISCOUNT_CODES = { "LAS2024": 0.05, "START": 0.10, "ZNAJOMY": 0.10 };
+        const REQUEST_TIMEOUT_MS = 12000;
         let currentDiscount = 0;
 
         function parsePrice(priceString) {
             if (!priceString) return 0;
             let cleanString = priceString.toString().replace(/zł/g, '').replace(/,/g, '.').trim();
             return parseFloat(cleanString) || 0;
+        }
+
+        function sanitizeQtyInput(input) {
+            const step = parseFloat(input.step) || 0.1;
+            const decimals = (step.toString().split('.')[1] || '').length;
+            let val = parseFloat(input.value) || 0;
+            val = Math.max(0, val);
+            const rounded = decimals === 0 ? Math.round(val) : Math.round(val / step) * step;
+            const fixed = decimals === 0 ? rounded : parseFloat(rounded.toFixed(decimals));
+            input.value = decimals === 0 ? String(fixed) : fixed.toFixed(decimals);
+            return parseFloat(input.value) || 0;
         }
 
         Papa.parse(SHEET_URL, {
@@ -169,19 +181,31 @@
                 const cena = parsePrice(item['Cena']);
                 const opis = item['Opis'] || '';
                 const nazwa = item['Nazwa'];
+                const imageUrl = item['Zdjęcie'] || item['Zdjecie'] || item['Foto'] || item['Obraz'] || '';
 
                 const html = `
                 <div class="flex flex-col sm:flex-row justify-between sm:items-start border-b pb-6 product-item ${disabledClass}" data-index="${index}">
-                    <div class="mb-4 sm:mb-0 max-w-md pr-4">
-                        <h3 class="font-bold text-lg text-gray-800 flex items-center">
-                            ${nazwa} ${statusText}
-                        </h3>
-                        <p class="text-sm text-gray-600 mt-1">${opis}</p>
-                        <p class="text-xs italic text-gray-400 mt-1">Skład: ${sklad}</p>
-                        ${expiryHtml}
-                        <span class="text-gray-500 text-sm mt-2 block price" data-price="${cena}">
-                            Cena jedn.: ${cena.toFixed(2)} zł / ${unit}
-                        </span>
+                    <div class="flex gap-4 w-full pr-4">
+                        <div class="w-full sm:w-32 flex-shrink-0">
+                            ${imageUrl ? `
+                                <img src="${imageUrl}" alt="Zdjęcie produktu ${nazwa}" class="w-full h-32 object-cover rounded-lg border shadow-sm">
+                            ` : `
+                                <div class="w-full h-32 bg-gray-100 text-gray-400 text-xs rounded-lg border flex items-center justify-center">
+                                    Brak zdjęcia
+                                </div>
+                            `}
+                        </div>
+                        <div class="flex-1 mb-4 sm:mb-0">
+                            <h3 class="font-bold text-lg text-gray-800 flex items-center">
+                                ${nazwa} ${statusText}
+                            </h3>
+                            <p class="text-sm text-gray-600 mt-1">${opis}</p>
+                            <p class="text-xs italic text-gray-400 mt-1">Skład: ${sklad}</p>
+                            ${expiryHtml}
+                            <span class="text-gray-500 text-sm mt-2 block price" data-price="${cena}">
+                                Cena jedn.: ${cena.toFixed(2)} zł / ${unit}
+                            </span>
+                        </div>
                     </div>
                     
                     <div class="flex flex-col items-end sm:items-center mt-2 sm:mt-0">
@@ -212,8 +236,8 @@
             const input = document.getElementById(`qty-${index}`);
             let val = parseFloat(input.value) || 0;
             val += delta;
-            if (val < 0) val = 0;
-            input.value = Math.round(val * 10) / 10;
+            input.value = val;
+            sanitizeQtyInput(input);
             calculateTotal();
         }
 
@@ -231,7 +255,7 @@
                 const price = parseFloat(item.querySelector('.price').dataset.price);
                 const input = item.querySelector('.qty-input');
                 const unit = input.dataset.unit;
-                const qty = parseFloat(input.value) || 0;
+                const qty = sanitizeQtyInput(input);
                 
                 const lineTotal = price * qty;
                 const lineTotalEl = document.getElementById(`line-total-${index}`);
@@ -286,6 +310,31 @@
                 msg.className = "text-right text-xs mt-1 text-red-500 font-bold h-4";
             }
             calculateTotal();
+        }
+
+        function saveOrderToSheet(orderData) {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+
+            return fetch(GOOGLE_SCRIPT_URL, {
+                method: "POST",
+                mode: "no-cors",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(orderData),
+                signal: controller.signal
+            })
+            .then((response) => {
+                if (response && response.ok === false && response.type !== 'opaque') {
+                    throw new Error("sheet-save-failed");
+                }
+            })
+            .catch((err) => {
+                if (err.name === 'AbortError') {
+                    throw new Error("sheet-save-timeout");
+                }
+                throw err;
+            })
+            .finally(() => clearTimeout(timeoutId));
         }
 
         window.sendOrder = function(e) {
@@ -343,29 +392,28 @@
             };
 
             // KROK 1: WYSYŁKA DO GOOGLE SHEETS
-            fetch(GOOGLE_SCRIPT_URL, {
-                method: "POST",
-                mode: "no-cors",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(orderData)
-            })
-            .then(() => {
-                // KROK 2: WYSYŁKA MAILA (EmailJS)
-                return emailjs.send(EMAILJS_SERVICE, EMAILJS_TEMPLATE, orderData);
-            })
-            .then(() => {
-                status.classList.remove('hidden');
-                status.className = "text-center mt-4 text-green-700 font-bold p-4 bg-green-50 rounded";
-                status.innerHTML = "✅ Zamówienie przyjęte!<br>Zapisano w systemie i wysłano potwierdzenie.";
-                btn.style.display = 'none';
-            })
-            .catch((err) => {
-                console.error("Błąd:", err);
-                status.textContent = "Wystąpił błąd. Skontaktuj się z nami telefonicznie.";
-                status.classList.remove('hidden');
-                btn.disabled = false;
-                btn.textContent = "Spróbuj ponownie";
-            });
+            saveOrderToSheet(orderData)
+                .then(() => {
+                    // KROK 2: WYSYŁKA MAILA (EmailJS)
+                    return emailjs.send(EMAILJS_SERVICE, EMAILJS_TEMPLATE, orderData);
+                })
+                .then(() => {
+                    status.classList.remove('hidden');
+                    status.className = "text-center mt-4 text-green-700 font-bold p-4 bg-green-50 rounded";
+                    status.innerHTML = "✅ Zamówienie przyjęte!<br>Zapisano w systemie i wysłano potwierdzenie.";
+                    btn.style.display = 'none';
+                })
+                .catch((err) => {
+                    console.error("Błąd:", err);
+                    status.classList.remove('hidden');
+                    status.className = "text-center mt-4 text-red-700 font-bold p-4 bg-red-50 rounded";
+                    const errorMsg = err.message === "sheet-save-timeout"
+                        ? "Nie udało się potwierdzić zapisu (przekroczono czas). Spróbuj ponownie lub skontaktuj się telefonicznie."
+                        : "Nie udało się zapisać zamówienia. Spróbuj ponownie lub skontaktuj się telefonicznie.";
+                    status.innerHTML = `⚠️ ${errorMsg}`;
+                    btn.disabled = false;
+                    btn.textContent = "Spróbuj ponownie";
+                });
         }
     </script>
 </body>
