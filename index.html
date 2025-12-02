@@ -93,6 +93,7 @@
                 <input type="text" name="ulica" placeholder="Ulica i numer domu" required class="p-3 border rounded w-full">
                 <textarea name="uwagi" placeholder="Uwagi (np. kod do domofonu)" class="p-3 border rounded w-full md:col-span-2" rows="2"></textarea>
             </div>
+            <div id="form-errors" class="text-sm text-red-600 mt-2 hidden"></div>
 
             <div class="mt-6 text-sm text-gray-600">
                 <label class="flex items-start gap-2">
@@ -111,6 +112,7 @@
 
     <footer class="text-center text-gray-500 text-sm pb-10">
         <p>&copy; 2024 Szlachetna Dziczyzna. RHD Wet. Nr: XXXXXXXX</p>
+        <p class="mt-2">W razie pytań proszę o kontakt telefoniczny: <strong>+48 791 177 777</strong>.</p>
     </footer>
 
     <script>
@@ -127,6 +129,7 @@
         const DISCOUNT_CODES = { "LAS2024": 0.05, "START": 0.10, "ZNAJOMY": 0.10 };
         const REQUEST_TIMEOUT_MS = 12000;
         let currentDiscount = 0;
+        let hasItemsInCart = false;
 
         function parsePrice(priceString) {
             if (!priceString) return 0;
@@ -147,6 +150,60 @@
             if (maxStock !== null && finalVal > maxStock) finalVal = maxStock;
             input.value = decimals === 0 ? String(finalVal) : finalVal.toFixed(decimals);
             return parseFloat(input.value) || 0;
+        }
+
+        function setStatus(message, isError = false, isPending = false) {
+            const status = document.getElementById('status-msg');
+            status.classList.remove('hidden');
+            status.className = `text-center mt-4 font-bold p-4 rounded ${isError ? 'text-red-700 bg-red-50' : 'text-green-700 bg-green-50'} ${isPending ? 'animate-pulse' : ''}`;
+            status.innerHTML = message;
+        }
+
+        function clearStatus() {
+            const status = document.getElementById('status-msg');
+            status.classList.add('hidden');
+            status.textContent = '';
+            status.className = 'text-center mt-4 hidden';
+        }
+
+        function setFormError(text) {
+            const box = document.getElementById('form-errors');
+            if (!text) {
+                box.classList.add('hidden');
+                box.textContent = '';
+                return;
+            }
+            box.classList.remove('hidden');
+            box.textContent = text;
+        }
+
+        function validateFormFields() {
+            const form = document.forms['order-form'];
+            const requiredFields = [
+                { field: form.imie_nazwisko, label: "Imię i nazwisko" },
+                { field: form.telefon, label: "Telefon" },
+                { field: form.email, label: "Email" },
+                { field: form.miasto, label: "Miejscowość" },
+                { field: form.ulica, label: "Ulica i numer" },
+            ];
+
+            for (const { field, label } of requiredFields) {
+                if (!field.value.trim()) {
+                    setFormError(`Uzupełnij pole: ${label}.`);
+                    field.focus();
+                    return false;
+                }
+            }
+
+            const phoneValid = /^[0-9 +()-]{6,}$/.test(form.telefon.value.trim());
+            if (!phoneValid) {
+                setFormError("Podaj poprawny numer telefonu.");
+                form.telefon.focus();
+                return false;
+            }
+
+            setFormError('');
+            return true;
         }
 
         Papa.parse(SHEET_URL, {
@@ -211,6 +268,7 @@
                             <span class="text-gray-500 text-sm mt-2 block price" data-price="${cena}">
                                 Cena jedn.: ${cena.toFixed(2)} zł / ${unit}
                             </span>
+                            ${maxQty ? `<span class="text-xs text-amber-700 font-semibold mt-1 block">Zostało ostatnie ${maxQty} ${unit}.</span>` : ''}
                         </div>
                         <div class="w-full sm:w-32 flex-shrink-0 order-2 sm:order-1 hidden sm:block">
                             ${imageBlock}
@@ -257,6 +315,8 @@
             let summaryHTML = '';
             let hasItems = false;
 
+            hasItemsInCart = false;
+
             document.querySelectorAll('.product-item').forEach((item) => {
                 if (item.classList.contains('out-of-stock')) return;
                 
@@ -275,6 +335,7 @@
                         lineTotalEl.textContent = lineTotal.toFixed(2) + ' zł';
                         lineTotalEl.classList.remove('opacity-0');
                         hasItems = true;
+                        hasItemsInCart = true;
                         summaryHTML += `
                         <div class="flex justify-between items-center border-b border-gray-200 border-dashed pb-1 last:border-0">
                             <span>${name} <span class="text-xs text-gray-500">(${qty} ${unit})</span></span>
@@ -305,6 +366,9 @@
             }
 
             document.getElementById('total-price').textContent = total.toFixed(2) + ' zł';
+            const submitBtn = document.getElementById('submit-btn');
+            submitBtn.disabled = !hasItemsInCart;
+            submitBtn.classList.toggle('opacity-50', !hasItemsInCart);
         }
 
         window.applyDiscount = function() {
@@ -352,6 +416,9 @@
             const btn = document.getElementById('submit-btn');
             const status = document.getElementById('status-msg');
             
+            clearStatus();
+            if (!validateFormFields()) return;
+
             let orderSummary = "";
             let hasProducts = false;
 
@@ -373,6 +440,7 @@
 
             btn.disabled = true;
             btn.textContent = "Zapisywanie zamówienia...";
+            setStatus("Zapisywanie w systemie...", false, true);
 
             const form = document.forms['order-form'];
             const addressFull = `${form.ulica.value}, ${form.miasto.value}`;
@@ -404,23 +472,20 @@
             // KROK 1: WYSYŁKA DO GOOGLE SHEETS
             saveOrderToSheet(orderData)
                 .then(() => {
+                    setStatus("Zapisywanie w systemie... OK. Wysyłamy potwierdzenie e-mail.", false, true);
                     // KROK 2: WYSYŁKA MAILA (EmailJS)
                     return emailjs.send(EMAILJS_SERVICE, EMAILJS_TEMPLATE, orderData);
                 })
                 .then(() => {
-                    status.classList.remove('hidden');
-                    status.className = "text-center mt-4 text-green-700 font-bold p-4 bg-green-50 rounded";
-                    status.innerHTML = "✅ Zamówienie przyjęte!<br>Zapisano w systemie i wysłano potwierdzenie.";
+                    setStatus("✅ Zamówienie przyjęte! Zapisano w systemie i wysłano potwierdzenie.", false, false);
                     btn.style.display = 'none';
                 })
                 .catch((err) => {
                     console.error("Błąd:", err);
-                    status.classList.remove('hidden');
-                    status.className = "text-center mt-4 text-red-700 font-bold p-4 bg-red-50 rounded";
                     const errorMsg = err.message === "sheet-save-timeout"
                         ? "Nie udało się potwierdzić zapisu (przekroczono czas). Spróbuj ponownie lub skontaktuj się telefonicznie."
                         : "Nie udało się zapisać zamówienia. Spróbuj ponownie lub skontaktuj się telefonicznie.";
-                    status.innerHTML = `⚠️ ${errorMsg}`;
+                    setStatus(`⚠️ ${errorMsg}`, true, false);
                     btn.disabled = false;
                     btn.textContent = "Spróbuj ponownie";
                 });
