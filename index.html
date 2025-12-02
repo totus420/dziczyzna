@@ -45,13 +45,6 @@
         
         <form id="order-form" onsubmit="sendOrder(event)">
             
-            <div class="mb-8">
-                <div class="bg-amber-50 border-l-4 border-amber-600 p-4 text-sm text-amber-900">
-                    <p class="font-bold">⚖️ Informacja o wadze:</p>
-                    <p>Waga produktów jest orientacyjna (+/- 10%). Dokładną kwotę podamy po zważeniu produktów.</p>
-                </div>
-            </div>
-
             <h2 class="text-2xl font-serif mb-6 border-b pb-2 accent-text">Wybierz produkty</h2>
             
             <div class="space-y-6" id="products-container">
@@ -59,6 +52,13 @@
             </div>
 
             <!-- Kody rabatowe -->
+            <div class="mb-4">
+                <div class="bg-amber-50 border-l-4 border-amber-600 p-4 text-sm text-amber-900">
+                    <p class="font-bold">⚖️ Informacja o wadze:</p>
+                    <p>Waga produktów jest orientacyjna (+/- 10%). Dokładną kwotę podamy po zważeniu produktów.</p>
+                </div>
+            </div>
+
             <div class="mt-8 flex items-center justify-end gap-2">
                 <input type="text" id="discount-code" placeholder="Kod rabatowy" class="p-2 border rounded text-sm w-40 uppercase">
                 <button type="button" onclick="applyDiscount()" class="bg-gray-200 hover:bg-gray-300 px-4 py-2 rounded text-sm font-bold">Użyj</button>
@@ -270,7 +270,6 @@
                             <span class="text-gray-500 text-sm mt-2 block price" data-price="${cena}">
                                 Cena jedn.: ${cena.toFixed(2)} zł / ${unit}
                             </span>
-                            ${maxQty ? `<span class="text-xs text-amber-700 font-semibold mt-1 block">Zostało ostatnie ${maxQty} ${unit}.</span>` : ''}
                         </div>
                         <div class="w-full sm:w-32 flex-shrink-0 order-2 sm:order-1 hidden sm:block">
                             ${imageBlock}
@@ -295,6 +294,7 @@
                             <button type="button" onclick="changeQty(${index}, ${step})" class="w-10 h-10 flex items-center justify-center bg-white border rounded hover:bg-gray-100 text-xl font-bold text-gray-600 shadow-sm">+</button>
                         </div>
                         <p id="line-total-${index}" class="text-sm font-bold text-green-700 mt-2 opacity-0 transition-opacity duration-200">0.00 zł</p>
+                        ${maxQty ? `<span class="text-xs text-amber-700 font-semibold mt-1 block">Zostało ostatnie ${maxQty} ${unit}.</span>` : ''}
                     </div>
                 </div>`;
                 
