@@ -188,6 +188,35 @@
             }
         }
 
+        async function requestOrderNumber() {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+            const payload = {
+                action: "nextOrderNumber",
+                sheet_id: SHEET_ID,
+                sheet_tab: SHEET_TAB
+            };
+            try {
+                const response = await fetch(GOOGLE_SCRIPT_URL, {
+                    method: "POST",
+                    mode: "cors",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(payload),
+                    signal: controller.signal
+                });
+                if (!response.ok) throw new Error("order-number-http");
+                const data = await response.json().catch(() => null);
+                const nr = data && (data.orderNumber || data.order_number || data.number);
+                if (!nr) throw new Error("order-number-missing");
+                return nr;
+            } catch (err) {
+                console.warn("Nie udało się pobrać numeru z serwera, używam lokalnego.", err);
+                return generateOrderNumber();
+            } finally {
+                clearTimeout(timeoutId);
+            }
+        }
+
         function setStatus(message, isError = false, isPending = false) {
             const status = document.getElementById('status-msg');
             status.classList.remove('hidden');
@@ -298,7 +327,6 @@
                 const unit = item['Jednostka'] || 'kg';
                 const step = unit.toLowerCase().includes('szt') ? 1 : 0.1;
                 const expiry = item['Ważność'];
-                const expiryHtml = expiry ? `<p class="text-xs text-amber-700 mt-1 font-semibold">⏳ Ważność: ${expiry}</p>` : '';
                 const sklad = item['Skład'] || '';
                 const cena = parsePrice(item['Cena']);
                 const opis = item['Opis'] || '';
@@ -314,6 +342,21 @@
 
                 const productIndex = idx;
                 idx += 1;
+                const hasDetails = Boolean(opis || sklad || expiry);
+                const detailsId = `details-${productIndex}`;
+                const detailsButton = hasDetails ? `
+                    <button type="button" class="text-sm font-semibold text-amber-800 flex items-center gap-2 mt-2" onclick="toggleDetails('${detailsId}', this)">
+                        <span class="inline-block transition-transform rotate-0">▼</span>
+                        <span>Szczegóły</span>
+                    </button>
+                ` : '';
+                const detailsBlock = hasDetails ? `
+                    <div id="${detailsId}" class="mt-2 text-sm text-gray-700 bg-amber-50 border border-amber-100 rounded-lg p-3 hidden">
+                        ${opis ? `<p class="leading-snug">${opis}</p>` : ''}
+                        ${sklad ? `<p class="text-xs italic text-gray-500 mt-2"><span class="font-semibold not-italic text-gray-700">Skład:</span> ${sklad}</p>` : ''}
+                        ${expiry ? `<p class="text-xs text-amber-700 font-semibold mt-2">⏳ Ważność: ${expiry}</p>` : ''}
+                    </div>
+                ` : '';
 
                 const html = `
                 <div class="flex flex-col sm:flex-row justify-between sm:items-start border-b pb-6 product-item ${disabledClass}" data-index="${productIndex}">
@@ -325,9 +368,8 @@
                             <div class="mt-2 sm:hidden">
                                 ${imageBlock}
                             </div>
-                            <p class="text-sm text-gray-600 mt-1">${opis}</p>
-                            <p class="text-xs italic text-gray-400 mt-1">Skład: ${sklad}</p>
-                            ${expiryHtml}
+                            ${detailsButton}
+                            ${detailsBlock}
                             <span class="text-gray-500 text-sm mt-2 block price" data-price="${cena}">
                                 Cena jedn.: ${cena.toFixed(2)} zł / ${unit}
                             </span>
@@ -429,6 +471,18 @@
             if (!body) return;
             body.classList.toggle('hidden');
             if (chevron) chevron.classList.toggle('rotate-180');
+        }
+
+        window.toggleDetails = function(id, btn) {
+            const body = document.getElementById(id);
+            if (!body) return;
+            const willShow = body.classList.contains('hidden');
+            body.classList.toggle('hidden');
+            if (btn) {
+                const spans = btn.querySelectorAll('span');
+                if (spans[0]) spans[0].classList.toggle('rotate-180', willShow);
+                if (spans[1]) spans[1].textContent = willShow ? 'Ukryj szczegóły' : 'Szczegóły';
+            }
         }
 
         window.adjustCartItem = function(index, delta) {
@@ -537,28 +591,31 @@
             const controller = new AbortController();
             const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
 
-            return fetch(GOOGLE_SCRIPT_URL, {
+            const send = (mode) => fetch(GOOGLE_SCRIPT_URL, {
                 method: "POST",
-                mode: "no-cors",
+                mode,
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(orderData),
                 signal: controller.signal
-            })
-            .then((response) => {
-                if (response && response.ok === false && response.type !== 'opaque') {
-                    throw new Error("sheet-save-failed");
-                }
-            })
-            .catch((err) => {
-                if (err.name === 'AbortError') {
-                    throw new Error("sheet-save-timeout");
-                }
-                throw err;
-            })
-            .finally(() => clearTimeout(timeoutId));
+            });
+
+            return send("cors")
+                .then((response) => {
+                    if (response.type === 'opaque') return;
+                    if (!response.ok) throw new Error("sheet-save-failed");
+                    return response.json().catch(() => ({}));
+                })
+                .catch((err) => {
+                    if (err.name === 'AbortError') {
+                        throw new Error("sheet-save-timeout");
+                    }
+                    // Jeśli CORS się wywali, próbujemy best-effort no-cors
+                    return send("no-cors").catch(() => { throw err; });
+                })
+                .finally(() => clearTimeout(timeoutId));
         }
 
-        window.sendOrder = function(e) {
+        window.sendOrder = async function(e) {
             e.preventDefault();
             const btn = document.getElementById('submit-btn');
             const status = document.getElementById('status-msg');
@@ -573,11 +630,12 @@
                 alert(`Minimalna wartość zamówienia to ${MIN_ORDER} zł.`);
                 return;
             }
-            
+
             clearStatus();
             if (!validateFormFields()) return;
 
-            const orderNumber = generateOrderNumber();
+            setStatus("Pobieram numer zamówienia...", false, true);
+            const orderNumber = await requestOrderNumber();
             let orderSummary = `Numer zamówienia: ${orderNumber}\n`;
             let hasProducts = false;
             let lineItems = [];
