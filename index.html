@@ -333,7 +333,7 @@
                 const nazwa = item['Nazwa'];
                 let imageUrl = item['Zdjęcie'] || item['Zdjecie'] || item['Foto'] || item['Obraz'] || '';
                 const nameSlug = (nazwa || '').toString().toLowerCase();
-                if (!imageUrl && nameSlug.includes('kielbasa') && nameSlug.includes('dzik')) {
+                if (!imageUrl && (nameSlug.includes('kielb') || nameSlug.includes('kiełb'))) {
                     imageUrl = 'kielbasadzik.jpg';
                 }
                 const imageBlock = imageUrl ? `
