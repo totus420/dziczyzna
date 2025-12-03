@@ -324,17 +324,23 @@
                 const statusText = '';
                 const soldOutNote = isAvailable ? '' : '<span class="text-xs font-bold text-red-700 mt-2 block">Wyprzedane</span>';
                 
-                const unit = item['Jednostka'] || 'kg';
-                const step = unit.toLowerCase().includes('szt') ? 1 : 0.1;
+                const nazwa = item['Nazwa'];
+                const nameSlug = (nazwa || '').toString().toLowerCase();
+                let unit = item['Jednostka'] || 'kg';
+                let step = unit.toLowerCase().includes('szt') ? 1 : 0.1;
                 const expiry = item['Ważność'];
                 const sklad = item['Skład'] || '';
                 const cena = parsePrice(item['Cena']);
                 const opis = item['Opis'] || '';
-                const nazwa = item['Nazwa'];
                 let imageUrl = item['Zdjęcie'] || item['Zdjecie'] || item['Foto'] || item['Obraz'] || '';
-                const nameSlug = (nazwa || '').toString().toLowerCase();
                 if (!imageUrl && (nameSlug.includes('kielb') || nameSlug.includes('kiełb'))) {
                     imageUrl = 'kielbasadzik.jpg';
+                }
+                const isSzynka = nameSlug.includes('szynk');
+                const isPoledwica = nameSlug.includes('polęd') || nameSlug.includes('poled');
+                if (isSzynka || isPoledwica) {
+                    unit = 'szt';
+                    step = 1;
                 }
                 const imageBlock = imageUrl ? `
                     <img src="${imageUrl}" alt="Zdjęcie produktu ${nazwa}" class="w-full h-32 object-cover rounded-lg border shadow-sm">
@@ -343,6 +349,20 @@
                         Brak zdjęcia
                     </div>
                 `;
+                const variantSelect = isSzynka ? `
+                    <label class="w-full text-xs font-semibold text-amber-800 mb-2">
+                        Wybierz wielkość:
+                        <select id="variant-${idx}" class="mt-1 w-full border rounded-lg p-2 text-sm">
+                            <option value="MALA 0,4-0,6 kg">MALA 0,4-0,6 kg</option>
+                            <option value="DUZA 0,7-1,0 kg">DUZA 0,7-1,0 kg</option>
+                        </select>
+                    </label>
+                ` : '';
+                const poledwicaNote = isPoledwica ? `
+                    <div class="mt-2 text-xs font-semibold text-amber-800">
+                        Kawałki ok. 0,5-0,7 kg. Ilość w sztukach.
+                    </div>
+                ` : '';
 
                 const productIndex = idx;
                 idx += 1;
@@ -388,6 +408,7 @@
                     </div>
                     
                     <div class="flex flex-col items-end sm:items-center mt-2 sm:mt-0">
+                        ${variantSelect}
                         <div class="flex items-center bg-gray-50 p-2 rounded-lg">
                             <button type="button" onclick="changeQty(${productIndex}, -${step})" class="w-10 h-10 flex items-center justify-center bg-white border rounded hover:bg-gray-100 text-xl font-bold text-gray-600 shadow-sm">-</button>
                             
@@ -407,6 +428,7 @@
                         <p id="line-total-${productIndex}" class="text-sm font-bold text-green-700 mt-2 opacity-0 transition-opacity duration-200">0.00 zł</p>
                         ${soldOutNote}
                         ${maxQty ? `<span class="text-xs text-amber-700 font-semibold mt-1 block">Zostało ostatnie ${maxQty} ${unit}.</span>` : ''}
+                        ${poledwicaNote}
                     </div>
                 </div>`;
                 
@@ -523,7 +545,9 @@
                 
                 const index = item.dataset.index;
                 const nameRaw = item.querySelector('h3').textContent.trim().replace('(Wyprzedane)', '');
-                const name = nameRaw.replace(/^\d+\.?\s*/, '');
+                const nameBase = nameRaw.replace(/^\d+\.?\s*/, '');
+                const variant = getVariantLabel(index);
+                const name = variant ? `${nameBase} (${variant})` : nameBase;
                 const price = parseFloat(item.querySelector('.price').dataset.price);
                 const input = item.querySelector('.qty-input');
                 const unit = input.dataset.unit;
@@ -630,6 +654,11 @@
                 .finally(() => clearTimeout(timeoutId));
         }
 
+        function getVariantLabel(index) {
+            const select = document.getElementById(`variant-${index}`);
+            return select ? select.value : '';
+        }
+
         window.sendOrder = async function(e) {
             e.preventDefault();
             const btn = document.getElementById('submit-btn');
@@ -663,7 +692,9 @@
                 if(qty > 0) {
                     hasProducts = true;
                     const nameRaw = item.querySelector('h3').textContent.trim().replace('(Wyprzedane)', '');
-                    const name = nameRaw.replace(/^\d+\.?\s*/, '');
+                    const nameBase = nameRaw.replace(/^\d+\.?\s*/, '');
+                    const variant = getVariantLabel(index);
+                    const name = variant ? `${nameBase} (${variant})` : nameBase;
                     const unit = input.dataset.unit;
                     const linePrice = document.getElementById(`line-total-${index}`).textContent;
                     orderSummary += `${name}: ${qty} ${unit} (Razem: ${linePrice})\n`;
