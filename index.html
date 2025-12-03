@@ -522,7 +522,8 @@
                 if (item.classList.contains('out-of-stock')) return;
                 
                 const index = item.dataset.index;
-                const name = item.querySelector('h3').textContent.trim().replace('(Wyprzedane)', '');
+                const nameRaw = item.querySelector('h3').textContent.trim().replace('(Wyprzedane)', '');
+                const name = nameRaw.replace(/^\d+\.?\s*/, '');
                 const price = parseFloat(item.querySelector('.price').dataset.price);
                 const input = item.querySelector('.qty-input');
                 const unit = input.dataset.unit;
@@ -661,7 +662,8 @@
                 
                 if(qty > 0) {
                     hasProducts = true;
-                    const name = item.querySelector('h3').textContent.trim().replace('(Wyprzedane)', '');
+                    const nameRaw = item.querySelector('h3').textContent.trim().replace('(Wyprzedane)', '');
+                    const name = nameRaw.replace(/^\d+\.?\s*/, '');
                     const unit = input.dataset.unit;
                     const linePrice = document.getElementById(`line-total-${index}`).textContent;
                     orderSummary += `${name}: ${qty} ${unit} (Razem: ${linePrice})\n`;
