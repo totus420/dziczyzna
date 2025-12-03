@@ -175,6 +175,19 @@
             return parseFloat(input.value) || 0;
         }
 
+        function generateOrderNumber() {
+            try {
+                const key = 'orderCounter';
+                let current = parseInt(localStorage.getItem(key), 10);
+                if (isNaN(current) || current < 300) current = 300;
+                const next = current + 1;
+                localStorage.setItem(key, next);
+                return `DZ-${next}`;
+            } catch (e) {
+                return `DZ-${Date.now()}`;
+            }
+        }
+
         function setStatus(message, isError = false, isPending = false) {
             const status = document.getElementById('status-msg');
             status.classList.remove('hidden');
@@ -564,7 +577,7 @@
             clearStatus();
             if (!validateFormFields()) return;
 
-            const orderNumber = `DZ-${Date.now()}`;
+            const orderNumber = generateOrderNumber();
             let orderSummary = `Numer zamówienia: ${orderNumber}\n`;
             let hasProducts = false;
             let lineItems = [];
