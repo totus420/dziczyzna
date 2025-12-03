@@ -182,9 +182,9 @@
                 if (isNaN(current) || current < 300) current = 300;
                 const next = current + 1;
                 localStorage.setItem(key, next);
-                return `DZ-${next}`;
+                return String(next);
             } catch (e) {
-                return `DZ-${Date.now()}`;
+                return String(Date.now());
             }
         }
 
@@ -206,7 +206,8 @@
                 });
                 if (!response.ok) throw new Error("order-number-http");
                 const data = await response.json().catch(() => null);
-                const nr = data && (data.orderNumber || data.order_number || data.number);
+                const rawNr = data && (data.orderNumber || data.order_number || data.number);
+                const nr = rawNr ? String(rawNr).replace(/^DZ[-\s]?/i, '') : '';
                 if (!nr) throw new Error("order-number-missing");
                 return nr;
             } catch (err) {
