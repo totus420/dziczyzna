@@ -451,6 +451,7 @@
                 const price = parseFloat(item.querySelector('.price').dataset.price);
                 const input = item.querySelector('.qty-input');
                 const unit = input.dataset.unit;
+                const stepVal = parseFloat(input.step) || 0.1;
                 const qty = sanitizeQtyInput(input);
                 
                 const lineTotal = price * qty;
@@ -467,8 +468,8 @@
                             <div>
                                 <span>${name} <span class="text-xs text-gray-500">(${qty} ${unit})</span></span>
                                 <div class="flex gap-2 mt-1 text-xs text-gray-500">
-                                    <button type="button" class="px-2 py-1 border rounded" onclick="adjustCartItem(${index}, -${step})">-</button>
-                                    <button type="button" class="px-2 py-1 border rounded" onclick="adjustCartItem(${index}, ${step})">+</button>
+                                    <button type="button" class="px-2 py-1 border rounded" onclick="adjustCartItem(${index}, -${stepVal})">-</button>
+                                    <button type="button" class="px-2 py-1 border rounded" onclick="adjustCartItem(${index}, ${stepVal})">+</button>
                                     <button type="button" class="px-2 py-1 border rounded text-red-600" onclick="removeCartItem(${index})">Usuń</button>
                                 </div>
                             </div>
