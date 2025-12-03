@@ -292,7 +292,7 @@
             const n = (name || '').toString().toLowerCase();
             const d = (desc || '').toString().toLowerCase();
 
-            const matchKielbasy = (text) => text.includes('kiełb') || text.includes('kielb') || text.includes('kabanos') || text.includes('parów') || text.includes('grill');
+            const matchKielbasy = (text) => text.includes('kiełb') || text.includes('kielb') || text.includes('kabanos') || text.includes('parów') || text.includes('grill') || text.includes('salami');
             const matchWedliny = (text) => text.includes('wędlin') || text.includes('wedlin') || text.includes('szynk') || text.includes('boczek') || text.includes('polęd') || text.includes('poled') || text.includes('baleron') || text.includes('schab');
             const matchPrzetwory = (text) => text.includes('przetw') || text.includes('paszt') || text.includes('smalec') || text.includes('gulasz') || text.includes('konserw') || text.includes('bulion') || text.includes('słoik') || text.includes('sloik');
 
@@ -399,7 +399,7 @@
                                 <span class="price text-lg font-extrabold tracking-tight" data-price="${cena}">
                                     ${cena.toFixed(2)} zł
                                 </span>
-                                <span class="text-xs font-semibold text-amber-800">/ ${unit}</span>
+                                <span class="text-xs font-semibold text-amber-800">/ ${isSzynka || isPoledwica ? 'kg' : unit}</span>
                             </div>
                         </div>
                         <div class="w-full sm:w-32 flex-shrink-0 order-2 sm:order-1 hidden sm:block">
