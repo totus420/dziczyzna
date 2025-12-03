@@ -331,7 +331,11 @@
                 const cena = parsePrice(item['Cena']);
                 const opis = item['Opis'] || '';
                 const nazwa = item['Nazwa'];
-                const imageUrl = item['Zdjęcie'] || item['Zdjecie'] || item['Foto'] || item['Obraz'] || '';
+                let imageUrl = item['Zdjęcie'] || item['Zdjecie'] || item['Foto'] || item['Obraz'] || '';
+                const nameSlug = (nazwa || '').toString().toLowerCase();
+                if (!imageUrl && nameSlug.includes('kielbasa') && nameSlug.includes('dzik')) {
+                    imageUrl = 'kielbasadzik.jpg';
+                }
                 const imageBlock = imageUrl ? `
                     <img src="${imageUrl}" alt="Zdjęcie produktu ${nazwa}" class="w-full h-32 object-cover rounded-lg border shadow-sm">
                 ` : `
@@ -370,9 +374,13 @@
                             </div>
                             ${detailsButton}
                             ${detailsBlock}
-                            <span class="text-gray-500 text-sm mt-2 block price" data-price="${cena}">
-                                Cena jedn.: ${cena.toFixed(2)} zł / ${unit}
-                            </span>
+                            <div class="mt-3 inline-flex items-center gap-2 px-3 py-2 bg-amber-100 text-amber-900 rounded-lg shadow-sm">
+                                <span class="text-sm font-semibold">Cena jedn.:</span>
+                                <span class="price text-lg font-extrabold tracking-tight" data-price="${cena}">
+                                    ${cena.toFixed(2)} zł
+                                </span>
+                                <span class="text-xs font-semibold text-amber-800">/ ${unit}</span>
+                            </div>
                         </div>
                         <div class="w-full sm:w-32 flex-shrink-0 order-2 sm:order-1 hidden sm:block">
                             ${imageBlock}
@@ -532,12 +540,18 @@
                         hasItemsInCart = true;
                         summaryHTML += `
                         <div class="flex justify-between items-center border-b border-gray-200 border-dashed pb-1 last:border-0">
-                            <div>
-                                <span>${name} <span class="text-xs text-gray-500">(${qty} ${unit})</span></span>
-                                <div class="flex gap-2 mt-1 text-xs text-gray-500">
-                                    <button type="button" class="px-2 py-1 border rounded" onclick="adjustCartItem(${index}, -${stepVal})">-</button>
-                                    <button type="button" class="px-2 py-1 border rounded" onclick="adjustCartItem(${index}, ${stepVal})">+</button>
-                                    <button type="button" class="px-2 py-1 border rounded text-red-600" onclick="removeCartItem(${index})">Usuń</button>
+                            <div class="space-y-1">
+                                <span class="font-semibold text-gray-800">${name}</span>
+                                <div class="flex flex-wrap items-center gap-2 text-xs text-gray-600">
+                                    <span class="inline-flex items-center gap-1 px-2 py-1 bg-amber-50 border border-amber-200 rounded-full text-amber-800 font-semibold">
+                                        <span class="text-sm">${qty}</span>
+                                        <span class="text-[10px] uppercase tracking-wide">${unit}</span>
+                                    </span>
+                                    <div class="inline-flex items-center gap-1">
+                                        <button type="button" class="px-2 py-1 border rounded-lg bg-white hover:bg-gray-100" onclick="adjustCartItem(${index}, -${stepVal})">-</button>
+                                        <button type="button" class="px-2 py-1 border rounded-lg bg-white hover:bg-gray-100" onclick="adjustCartItem(${index}, ${stepVal})">+</button>
+                                        <button type="button" class="px-2 py-1 border rounded-lg bg-white hover:bg-red-50 text-red-600 border-red-200" onclick="removeCartItem(${index})">Usuń</button>
+                                    </div>
                                 </div>
                             </div>
                             <span class="font-semibold">${lineTotal.toFixed(2)} zł</span>
