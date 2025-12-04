@@ -25,23 +25,54 @@
     <meta property="og:image" content="logo.png" />
     <meta property="og:type" content="website" />
 
+    <!-- Czcionki: Inter (tekst) + Playfair Display (nagłówki) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Playfair+Display:wght@500;700&display=swap" rel="stylesheet">
+
     <style>
-        body { background-color: #fdfbf7; color: #2c3e50; }
+        /* Tło strony + podstawowa typografia */
+        body {
+            font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+            color: #2c3e50;
+            background: radial-gradient(circle at top, #4b5c45 0, #fdfbf7 55%, #f5efe3 100%);
+        }
+
+        /* Serif do nagłówków – nadpisujemy tailwindowe .font-serif */
+        .font-serif {
+            font-family: 'Playfair Display', ui-serif, Georgia, 'Times New Roman', serif;
+        }
+
         .accent-bg { background-color: #3f4f3a; }
         .accent-text { color: #3f4f3a; }
-        .out-of-stock { opacity: 0.5; pointer-events: none; filter: grayscale(100%); }
-        input[type=number]::-webkit-inner-spin-button, 
-        input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+
+        .out-of-stock {
+            opacity: 0.5;
+            pointer-events: none;
+            filter: grayscale(100%);
+        }
+
+        input[type=number]::-webkit-inner-spin-button,
+        input[type=number]::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
     </style>
 </head>
 <body class="font-sans antialiased pb-20">
 
-    <header class="accent-bg text-white py-12 text-center shadow-md">
-        <div class="flex flex-col items-center gap-6">
-            <img src="logo.png" alt="Szlachetna Dziczyzna" class="w-[400px] max-w-[90vw] h-auto drop-shadow-lg">
-            <div class="sr-only">
-                <h1>Szlachetna Dziczyzna</h1>
-                <p>Manufaktura wyrobów rzemieślniczych z polskich lasów</p>
+    <header class="accent-bg text-white py-8 md:py-10 text-center shadow-md">
+        <div class="flex flex-col items-center gap-4">
+            <img src="logo.png"
+                 alt="Szlachetna Dziczyzna"
+                 class="w-[380px] max-w-[90vw] h-auto drop-shadow-lg">
+            <div>
+                <h1 class="text-2xl md:text-3xl font-serif tracking-[0.15em] uppercase">
+                    Szlachetna Dziczyzna
+                </h1>
+                <p class="mt-1 text-sm md:text-base tracking-wide uppercase text-amber-100">
+                    Manufaktura wyrobów rzemieślniczych z polskich lasów
+                </p>
             </div>
         </div>
     </header>
@@ -51,14 +82,23 @@
         <form id="order-form" onsubmit="sendOrder(event)">
             <div class="grid md:grid-cols-3 gap-6">
                 <div class="md:col-span-2">
-                    <section class="mb-6 p-4 md:p-5 bg-amber-50 border border-amber-200 rounded-lg shadow-sm">
-                        <h2 class="text-xl font-serif accent-text mb-2">Dlaczego nasza dziczyzna?</h2>
-                        <p class="text-sm text-amber-900 leading-relaxed">
-                            Jeśli chcesz mieć pewność, że w mięsie jest 100% mięsa – bez antybiotyków, bez szczepionek, bez wypełniaczy i bez sztucznej paszy – dobrze trafiłeś. Nasza dziczyzna pochodzi z wolnych zwierząt żyjących w naturalnych warunkach. Starannie wyselekcjonowana i przygotowana według tradycyjnych receptur, z pasją i szacunkiem do natury.
-                        </p>
-                        <p class="text-sm text-amber-900 leading-relaxed mt-3">
-                            Każda partia mięsa jest przebadana przez uprawnionego lekarza weterynarii i dopuszczona do spożycia. Nasze wyroby spełniają wszystkie obowiązujące normy sanitarne, dzięki czemu masz pewność, że kupujesz dziczyznę bezpieczną i najwyższej jakości.
-                        </p>
+                    <section class="mb-6 p-5 md:p-6 bg-amber-50/90 border border-amber-200 rounded-2xl shadow-sm">
+                        <div class="flex items-start gap-3">
+                            <span class="text-2xl">🌲</span>
+                            <div>
+                                <h2 class="text-xl md:text-2xl font-serif accent-text mb-3">
+                                    Dlaczego nasza dziczyzna?
+                                </h2>
+                                <p class="text-[15px] md:text-base text-amber-900 leading-relaxed">
+                                    Jeśli chcesz mieć pewność, że w mięsie jest
+                                    <span class="font-semibold">100% mięsa – bez antybiotyków, szczepionek i sztucznej paszy</span>,
+                                    dobrze trafiłeś. Nasza dziczyzna pochodzi z wolnych zwierząt żyjących w naturalnych warunkach. Starannie wyselekcjonowana i przygotowana według tradycyjnych receptur, z pasją i szacunkiem do natury.
+                                </p>
+                                <p class="text-[15px] md:text-base text-amber-900 leading-relaxed mt-3">
+                                    Każda partia mięsa jest przebadana przez uprawnionego lekarza weterynarii i dopuszczona do spożycia. Nasze wyroby spełniają wszystkie obowiązujące normy sanitarne, dzięki czemu masz pewność, że kupujesz dziczyznę bezpieczną i najwyższej jakości.
+                                </p>
+                            </div>
+                        </div>
                     </section>
 
                     <h2 class="text-2xl font-serif mb-2 border-b pb-2 accent-text">Wybierz produkty</h2>
