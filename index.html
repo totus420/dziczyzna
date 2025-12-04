@@ -417,7 +417,7 @@
                 ` : '';
                 const detailsBlock = hasDetails ? `
                     <div id="${detailsId}" class="mt-2 text-sm text-gray-700 bg-amber-50 border border-amber-100 rounded-lg p-3 hidden">
-                        ${opis ? `<p class="leading-snug">${opis}</p>` : ''}
+                        ${opis ? `<p class="text-sm text-gray-700 leading-relaxed">${opis}</p>` : ''}
                         ${sklad ? `<p class="text-xs italic text-gray-500 mt-2"><span class="font-semibold not-italic text-gray-700">Skład:</span> ${sklad}</p>` : ''}
                         ${expiry ? `<p class="text-xs text-amber-700 font-semibold mt-2">⏳ Ważność: ${expiry}</p>` : ''}
                     </div>
@@ -425,9 +425,9 @@
 
                 const html = `
                 <div class="flex flex-col sm:flex-row justify-between sm:items-start border-b pb-6 product-item ${disabledClass}" data-index="${productIndex}" data-kind="${isSzynka ? 'szynka' : isPoledwica ? 'poledwica' : ''}">
-                    <div class="flex flex-col sm:flex-row gap-4 w-full pr-4">
+                    <div class="flex flex-col sm:flex-row gap-4 w-full p-4 bg-white/80 rounded-xl shadow-sm border border-gray-100">
                         <div class="flex-1 mb-4 sm:mb-0 order-1 sm:order-2">
-                            <h3 class="font-bold text-lg text-gray-800 flex items-center">
+                            <h3 class="text-lg md:text-xl font-semibold accent-text flex items-center">
                                 <span class="text-gray-400 mr-2">${idx}.</span> ${nazwa} ${statusText}
                             </h3>
                             <div class="mt-2 sm:hidden">
@@ -435,12 +435,12 @@
                             </div>
                             ${detailsButton}
                             ${detailsBlock}
-                            <div class="mt-3 inline-flex items-center gap-2 px-3 py-2 bg-amber-100 text-amber-900 rounded-lg shadow-sm">
-                                <span class="text-sm font-semibold">Cena:</span>
-                                <span class="price text-lg font-extrabold tracking-tight" data-price="${cena}">
+                            <div class="mt-3 inline-flex items-center gap-2 px-3 py-2 bg-amber-100/80 text-amber-900 rounded-full shadow-sm">
+                                <span class="text-xs uppercase tracking-wide">Cena</span>
+                                <span class="price text-lg md:text-xl font-extrabold tracking-tight" data-price="${cena}">
                                     ${cena.toFixed(2)} zł
                                 </span>
-                                <span class="text-xs font-semibold text-amber-800">/ ${isSzynka || isPoledwica ? 'kg' : unit}</span>
+                                <span class="text-[11px] uppercase font-semibold text-amber-800">/ ${isSzynka || isPoledwica ? 'kg' : unit}</span>
                             </div>
                         </div>
                         <div class="w-full sm:w-32 flex-shrink-0 order-2 sm:order-1 hidden sm:block">
@@ -450,21 +450,21 @@
                     
                     <div class="flex flex-col items-end sm:items-center mt-2 sm:mt-0">
                         ${variantSelect}
-                        <div class="flex items-center bg-gray-50 p-2 rounded-lg">
-                            <button type="button" onclick="changeQty(${productIndex}, -${step})" class="w-10 h-10 flex items-center justify-center bg-white border rounded hover:bg-gray-100 text-xl font-bold text-gray-600 shadow-sm">-</button>
+                        <div class="flex items-center bg-gray-50 p-2 rounded-full shadow-inner">
+                            <button type="button" onclick="changeQty(${productIndex}, -${step})" class="w-8 h-8 md:w-9 md:h-9 flex items-center justify-center bg-amber-200 text-amber-900 rounded-full hover:bg-amber-300 active:scale-95 transition text-lg">-</button>
                             
                             <input type="number" 
                                 min="0" 
                                 step="${step}" 
                                 placeholder="0" 
                                 id="qty-${productIndex}"
-                                class="qty-input w-20 p-2 mx-2 text-center bg-transparent border-b outline-none font-bold text-lg" 
+                                class="qty-input w-20 md:w-24 p-2 mx-2 text-center bg-transparent border-b-2 border-gray-300 focus:border-amber-700 focus:outline-none text-base" 
                                 name="${nazwa}"
                                 data-unit="${unit}"
                                 data-stock="${maxQty !== null ? maxQty : ''}"
                                 oninput="calculateTotal()">
                             
-                            <button type="button" onclick="changeQty(${productIndex}, ${step})" class="w-10 h-10 flex items-center justify-center bg-white border rounded hover:bg-gray-100 text-xl font-bold text-gray-600 shadow-sm">+</button>
+                            <button type="button" onclick="changeQty(${productIndex}, ${step})" class="w-8 h-8 md:w-9 md:h-9 flex items-center justify-center bg-amber-200 text-amber-900 rounded-full hover:bg-amber-300 active:scale-95 transition text-lg">+</button>
                         </div>
                         <p id="line-total-${productIndex}" class="text-sm font-bold text-green-700 mt-2 opacity-0 transition-opacity duration-200">0.00 zł</p>
                         ${soldOutNote}
@@ -477,7 +477,7 @@
                 categories[category].push({ name: nazwa, html });
             });
 
-            CATEGORY_ORDER.forEach((catName) => {
+            CATEGORY_ORDER.forEach((catName, i) => {
                 if (!categories[catName] || categories[catName].length === 0) return;
                 const sortedItems = categories[catName].sort((a, b) => {
                     if (catName === "Kiełbasy") {
@@ -513,13 +513,16 @@
                     return numbered;
                 });
                 const sectionId = `cat-${slugifyCategory(catName)}`;
+                const isOpen = i === 0;
                 const sectionHtml = `
                 <div class="category-section border rounded-lg mb-4 overflow-hidden">
-                    <button type="button" class="w-full flex justify-between items-center bg-gray-50 px-4 py-3 font-bold accent-text text-left" onclick="toggleCategory('${sectionId}')">
+                    <button type="button"
+                        class="w-full flex justify-between items-center bg-gray-50 px-4 py-3 font-semibold accent-text text-left border-b border-gray-200"
+                        onclick="toggleCategory('${sectionId}')">
                         <span>${catName}</span>
-                        <span id="${sectionId}-chevron" class="transition-transform rotate-180">▼</span>
+                        <span id="${sectionId}-chevron" class="transition-transform ${isOpen ? 'rotate-180' : ''}">▼</span>
                     </button>
-                    <div id="${sectionId}" class="category-body divide-y hidden">
+                    <div id="${sectionId}" class="category-body ${isOpen ? '' : 'hidden'} divide-y">
                         ${rendered.join('')}
                     </div>
                 </div>`;
