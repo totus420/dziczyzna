@@ -1,0 +1,34 @@
+name: Deploy to home.pl
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Sync site to home.pl via FTP
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.4
+        with:
+          server: ${{ secrets.FTP_HOST }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          protocol: ftp
+          # przykład: /public_html/szlachetnadziczyzna/
+          server-dir: ${{ secrets.FTP_REMOTE_DIR }}
+          state-name: .ftp-deploy-sync-state
+          exclude: |
+            **/.git*
+            **/.github/**
+            **/.gitignore
+            **/README.md
