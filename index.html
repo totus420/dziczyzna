@@ -43,8 +43,52 @@
             font-family: 'Playfair Display', ui-serif, Georgia, 'Times New Roman', serif;
         }
 
-        .accent-bg { background-color: #3f4f3a; }
-        .accent-text { color: #3f4f3a; }
+        :root {
+            --forest-700: #3f4f3a;
+            --amber-cream-50: #f7f2e8;
+            --amber-cream-100: #eadbc4;
+            --sage-50: #eef3ec;
+            --sage-100: #d7e4d2;
+            --sage-200: #c8d7c3;
+            --sand-50: #f4f1ed;
+            --sand-100: #e7dfd3;
+            --sand-200: #d7c8b4;
+        }
+
+        .accent-bg { background-color: var(--forest-700); }
+        .accent-text { color: var(--forest-700); }
+
+        .section-intro {
+            background-color: var(--amber-cream-50);
+            border: 1px solid var(--amber-cream-100);
+        }
+
+        .section-products {
+            background-color: var(--sage-50);
+            border: 1px solid var(--sage-100);
+        }
+
+        .note-products {
+            background-color: #e5efe0;
+            border: 1px solid var(--sage-200);
+            color: #2f3b2b;
+        }
+
+        .section-form {
+            background-color: var(--sand-50);
+            border: 1px solid var(--sand-100);
+        }
+
+        .note-form {
+            background-color: #ebe2d6;
+            border-left: 4px solid var(--sand-200);
+            color: #4a4134;
+        }
+
+        .cart-panel {
+            background-color: #efebe4;
+            border: 1px solid var(--sand-100);
+        }
 
         .out-of-stock {
             opacity: 0.5;
@@ -66,7 +110,7 @@
             <img src="logo.png"
                  alt="Szlachetna Dziczyzna"
                  class="w-[380px] max-w-[90vw] h-auto drop-shadow-lg">
-            <div>
+            <div class="sr-only">
                 <h1 class="text-2xl md:text-3xl font-serif tracking-[0.15em] uppercase">
                     Szlachetna Dziczyzna
                 </h1>
@@ -82,7 +126,7 @@
         <form id="order-form" onsubmit="sendOrder(event)">
             <div class="grid md:grid-cols-3 gap-6">
                 <div class="md:col-span-2">
-                    <section class="mb-6 p-5 md:p-6 bg-amber-50/90 border border-amber-200 rounded-2xl shadow-sm">
+                    <section class="mb-6 p-5 md:p-6 section-intro rounded-2xl shadow-sm">
                         <div class="flex items-start gap-3">
                             <span class="text-2xl">🌲</span>
                             <div>
@@ -101,69 +145,73 @@
                         </div>
                     </section>
 
-                    <h2 class="text-2xl font-serif mb-2 border-b pb-2 accent-text">Wybierz produkty</h2>
-                    <p class="text-sm text-amber-800 mb-6">Minimalna wartość zamówienia: <strong>200 zł</strong>.</p>
-                    
-                    <div class="space-y-6" id="products-container">
-                        <p class="text-center text-gray-500 py-10">Ładowanie oferty z arkusza...</p>
-                    </div>
-
-                    <!-- Kody rabatowe -->
-                    <div class="mb-4">
-                        <div class="bg-amber-50 border-l-4 border-amber-600 p-4 text-sm text-amber-900">
-                            <p class="font-bold">⚖️ Informacja o wadze:</p>
-                            <p>Waga produktów jest orientacyjna (+/- 10%). Dokładną kwotę podamy po zważeniu produktów.</p>
+                    <section class="mb-8 p-5 md:p-6 section-products rounded-2xl shadow-sm">
+                        <div class="flex items-center justify-between gap-3 flex-wrap">
+                            <h2 class="text-2xl font-serif accent-text">Wybierz produkty</h2>
                         </div>
-                    </div>
+                        <div class="note-products rounded-xl p-4 mt-3 text-sm leading-relaxed">
+                            <p class="font-semibold">Minimalna wartość zamówienia: <strong>200 zł</strong>.</p>
+                            <p class="mt-1">⚖️ Waga produktów jest orientacyjna (+/- 10%). Dokładną kwotę podamy po zważeniu produktów.</p>
+                        </div>
+                        
+                        <div class="space-y-6 mt-6" id="products-container">
+                            <p class="text-center text-gray-500 py-10">Ładowanie oferty z arkusza...</p>
+                        </div>
+                    </section>
 
-                    <div class="mt-8 flex items-center justify-end gap-2">
-                        <input type="text" id="discount-code" placeholder="Kod rabatowy" class="p-2 border rounded text-sm w-40 uppercase">
-                        <button type="button" onclick="applyDiscount()" class="bg-gray-200 hover:bg-gray-300 px-4 py-2 rounded text-sm font-bold">Użyj</button>
-                    </div>
-                    <p id="discount-message" class="text-right text-xs mt-1 text-green-600 font-bold h-4"></p>
+                    <section class="section-form p-5 md:p-6 rounded-2xl shadow-sm">
+                        <h2 class="text-2xl font-serif mb-4 border-b pb-2 accent-text">Dane do dostawy</h2>
+                        
+                        <div class="note-form p-4 mb-6 text-sm rounded-xl">
+                            <p class="font-semibold">🚚 Dostawa:</p>
+                            <p>Dostawy realizujemy <strong>wyłącznie osobiście w poniedziałki</strong>. Zamówienia przyjmowane są od poniedziałku do czwartku.</p>
+                            <p>Dostarczamy do 30 km od Warszawy.</p>
+                        </div>
 
-                    <h2 class="text-2xl font-serif mt-10 mb-6 border-b pb-2 accent-text">Dane do dostawy</h2>
-                    
-                    <div class="bg-green-50 border-l-4 border-green-700 p-4 mb-6 text-sm text-green-900">
-                        <p class="font-bold">🚚 Dostawa:</p>
-                        <p>Dostawy realizujemy <strong>wyłącznie osobiście w poniedziałki</strong>. Zamówienia przyjmowane są od poniedziałku do czwartku.</p>
-                        <p>Dostarczamy do 30 km od Warszawy.</p>
-                    </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <input type="text" name="imie_nazwisko" placeholder="Imię i Nazwisko" required class="p-3 border rounded w-full" autocomplete="name">
+                            <input type="tel" name="telefon" placeholder="Numer telefonu" required class="p-3 border rounded w-full" autocomplete="tel">
+                            <input type="email" name="email" placeholder="Adres Email" required class="p-3 border rounded w-full md:col-span-2" autocomplete="email">
+                            <input type="text" name="miasto" placeholder="Miejscowość" required class="p-3 border rounded w-full" autocomplete="address-level2">
+                            <input type="text" name="ulica" placeholder="Ulica i numer domu" required class="p-3 border rounded w-full" autocomplete="address-line1">
+                            <textarea name="uwagi" placeholder="Uwagi (np. kod do domofonu)" class="p-3 border rounded w-full md:col-span-2" rows="2"></textarea>
+                        </div>
+                        <div id="form-errors" class="text-sm text-red-600 mt-2 hidden"></div>
 
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <input type="text" name="imie_nazwisko" placeholder="Imię i Nazwisko" required class="p-3 border rounded w-full" autocomplete="name">
-                        <input type="tel" name="telefon" placeholder="Numer telefonu" required class="p-3 border rounded w-full" autocomplete="tel">
-                        <input type="email" name="email" placeholder="Adres Email" required class="p-3 border rounded w-full md:col-span-2" autocomplete="email">
-                        <input type="text" name="miasto" placeholder="Miejscowość" required class="p-3 border rounded w-full" autocomplete="address-level2">
-                        <input type="text" name="ulica" placeholder="Ulica i numer domu" required class="p-3 border rounded w-full" autocomplete="address-line1">
-                        <textarea name="uwagi" placeholder="Uwagi (np. kod do domofonu)" class="p-3 border rounded w-full md:col-span-2" rows="2"></textarea>
-                    </div>
-                    <div id="form-errors" class="text-sm text-red-600 mt-2 hidden"></div>
-
-                    <div class="mt-6 text-sm text-gray-600">
-                        <label class="flex items-start gap-2">
-                            <input type="checkbox" required class="mt-1">
-                            <span>Wyrażam zgodę na realizację zamówienia i akceptuję termin dostawy (Czwartek).</span>
-                        </label>
-                    </div>
-
-                    <button type="submit" id="submit-btn" class="w-full accent-bg text-white font-bold py-4 rounded mt-8 hover:opacity-90 transition text-lg shadow-lg">
-                        Złóż zamówienie
-                    </button>
-                    <p id="status-msg" class="text-center mt-4 hidden"></p>
+                        <div class="mt-6 text-sm text-gray-700">
+                            <label class="flex items-start gap-2">
+                                <input type="checkbox" required class="mt-1">
+                                <span>Wyrażam zgodę na realizację zamówienia i akceptuję termin dostawy (Czwartek).</span>
+                            </label>
+                        </div>
+                    </section>
                 </div>
 
                 <!-- PODSUMOWANIE KOSZYKA -->
-                <div class="bg-gray-100 p-6 rounded-lg shadow-inner md:sticky md:top-6 h-fit">
-                    <h3 class="font-bold text-gray-700 border-b pb-2 mb-2">Twój koszyk:</h3>
+                <div class="cart-panel p-6 rounded-2xl shadow-sm md:sticky md:top-6 h-fit space-y-4">
+                    <h3 class="font-bold text-gray-800 border-b pb-2 mb-2">Twój koszyk:</h3>
                     
-                    <div id="cart-summary-list" class="text-sm space-y-2 mb-4 text-gray-600">
-                        <p class="italic text-gray-400">Brak produktów.</p>
+                    <div id="cart-summary-list" class="text-sm space-y-2 mb-2 text-gray-700">
+                        <p class="italic text-gray-500">Brak produktów.</p>
                     </div>
 
-                    <div class="text-right border-t pt-4">
+                    <div class="text-right border-t pt-3">
                         <span class="text-xl">Do zapłaty (orientacyjnie): <strong id="total-price" class="accent-text text-2xl">0.00 zł</strong></span>
                     </div>
+
+                    <div class="pt-2">
+                        <label for="discount-code" class="text-sm font-semibold text-gray-800">Kod rabatowy</label>
+                        <div class="mt-2 flex items-center gap-2">
+                            <input type="text" id="discount-code" placeholder="np. START" class="p-2 border rounded text-sm w-full uppercase">
+                            <button type="button" onclick="applyDiscount()" class="bg-gray-200 hover:bg-gray-300 px-4 py-2 rounded text-sm font-bold whitespace-nowrap">Użyj</button>
+                        </div>
+                        <p id="discount-message" class="text-right text-xs mt-1 text-green-700 font-semibold h-4"></p>
+                    </div>
+
+                    <button type="submit" id="submit-btn" class="w-full accent-bg text-white font-bold py-4 rounded hover:opacity-90 transition text-lg shadow-lg">
+                        Złóż zamówienie
+                    </button>
+                    <p id="status-msg" class="text-center mt-1 hidden text-sm"></p>
                 </div>
             </div>
         </form>
