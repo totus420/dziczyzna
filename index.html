@@ -242,6 +242,12 @@
         let currentDiscount = 0;
         let hasItemsInCart = false;
 
+        const normalizeKey = (str = '') => str
+            .normalize("NFD")
+            .replace(/\p{Diacritic}/gu, '')
+            .toLowerCase()
+            .trim();
+
         const normalizeImageKey = (str = '') => str
             .normalize("NFD")
             .replace(/\p{Diacritic}/gu, '')
@@ -272,10 +278,16 @@
             [normalizeImageKey('Salami dojrzewające z Jelenia')]: 'salami_jelen.jpeg',
         };
 
+        const getAvailability = (item) => {
+            const key = Object.keys(item).find(k => normalizeKey(k) === 'dostepnosc');
+            if (!key) return null;
+            const stock = parseFloat(item[key]);
+            return Number.isFinite(stock) ? stock : null;
+        };
+
         const isItemAvailable = (item) => {
-            const stock = parseFloat(item['Dostępność'] || item['Dostepnosc']);
-            if (Number.isFinite(stock)) return stock > 0;
-            return false;
+            const stock = getAvailability(item);
+            return stock !== null ? stock > 0 : false;
         };
 
         function parsePrice(priceString) {
@@ -448,7 +460,7 @@
                 if (!item['Nazwa']) return; 
                 const category = normalizeCategory(item['Kategoria'] || item['Kategoria (PL)'] || item['Kategoria1'], item['Nazwa'], item['Opis']);
 
-                const stock = parseFloat(item['Dostępność'] || item['Dostepnosc']);
+                const stock = getAvailability(item);
                 const maxQty = isFinite(stock) && stock > 0 ? stock : null;
                 const isAvailable = maxQty ? maxQty > 0 : stock > 0;
                 const disabledClass = isAvailable ? '' : 'out-of-stock';
