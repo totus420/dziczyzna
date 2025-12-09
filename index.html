@@ -294,6 +294,31 @@
             return stock !== null ? stock > 0 : false;
         };
 
+        const sortCategoryItems = (items, catName) => {
+            const priority = (name) => {
+                const t = name.toLowerCase();
+                if (catName === "Kiełbasy") {
+                    if (t.includes('parów')) return 0;
+                    if (t.includes('kielb') || t.includes('kiełb')) return 1;
+                    if (t.includes('kabanos')) return 2;
+                    return 3;
+                }
+                if (catName === "Wędliny") {
+                    if (t.includes('szynk')) return 0;
+                    if (t.includes('salami')) return 1;
+                    if (t.includes('polęd') || t.includes('poled')) return 2;
+                    return 3;
+                }
+                return 99;
+            };
+            return [...items].sort((a, b) => {
+                const pa = priority(a.name);
+                const pb = priority(b.name);
+                if (pa !== pb && pa !== 99 && pb !== 99) return pa - pb;
+                return a.name.localeCompare(b.name, 'pl');
+            });
+        };
+
         function parsePrice(priceString) {
             if (!priceString) return 0;
             let cleanString = priceString.toString().replace(/zł/g, '').replace(/,/g, '.').trim();
@@ -587,33 +612,9 @@
 
             CATEGORY_ORDER.forEach((catName, i) => {
                 if (!categories[catName] || (categories[catName].available.length === 0 && categories[catName].unavailable.length === 0)) return;
-                const sortedItems = [...categories[catName].available, ...categories[catName].unavailable].sort((a, b) => {
-                    if (catName === "Kiełbasy") {
-                        const pri = (name) => {
-                            const t = name.toLowerCase();
-                            if (t.includes('parów')) return 0;
-                            if (t.includes('kielb') || t.includes('kiełb')) return 1;
-                            if (t.includes('kabanos')) return 2;
-                            return 3;
-                        };
-                        const pa = pri(a.name);
-                        const pb = pri(b.name);
-                        if (pa !== pb) return pa - pb;
-                    }
-                    if (catName === "Wędliny") {
-                        const pri = (name) => {
-                            const t = name.toLowerCase();
-                            if (t.includes('szynk')) return 0;
-                            if (t.includes('salami')) return 1;
-                            if (t.includes('polęd') || t.includes('poled')) return 2;
-                            return 3;
-                        };
-                        const pa = pri(a.name);
-                        const pb = pri(b.name);
-                        if (pa !== pb) return pa - pb;
-                    }
-                    return a.name.localeCompare(b.name, 'pl');
-                });
+                const availableSorted = sortCategoryItems(categories[catName].available, catName);
+                const unavailableSorted = sortCategoryItems(categories[catName].unavailable, catName);
+                const sortedItems = [...availableSorted, ...unavailableSorted];
                 let localIdx = 1;
                 const rendered = sortedItems.map(item => {
                     const numbered = item.html.replace(/<span class="text-gray-400 mr-2">.*?<\/span>/, `<span class="text-gray-400 mr-2">${localIdx}.<\/span>`);
