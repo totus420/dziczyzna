@@ -626,9 +626,9 @@
                 const sectionHtml = `
                 <div class="category-section border rounded-lg mb-4 overflow-hidden">
                     <button type="button"
-                        class="w-full flex justify-between items-center bg-gray-50 px-4 py-3 font-semibold accent-text text-left border-b border-gray-200"
+                        class="w-full flex justify-between items-center bg-gray-50 px-4 py-3 font-semibold accent-text text-left border-b border-gray-200 text-lg md:text-xl"
                         onclick="toggleCategory('${sectionId}')">
-                        <span>${catName}</span>
+                        <span class="font-serif">${catName}</span>
                         <span id="${sectionId}-chevron" class="transition-transform ${isOpen ? 'rotate-180' : ''}">▼</span>
                     </button>
                     <div id="${sectionId}" class="category-body ${isOpen ? '' : 'hidden'} divide-y">
