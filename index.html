@@ -272,6 +272,12 @@
             [normalizeImageKey('Salami dojrzewające z Jelenia')]: 'salami_jelen.jpeg',
         };
 
+        const isItemAvailable = (item) => {
+            const stock = parseFloat(item['Dostępność'] || item['Dostepnosc']);
+            if (Number.isFinite(stock)) return stock > 0;
+            return false;
+        };
+
         function parsePrice(priceString) {
             if (!priceString) return 0;
             let cleanString = priceString.toString().replace(/zł/g, '').replace(/,/g, '.').trim();
@@ -432,11 +438,17 @@
             const categories = {};
             let idx = 0;
 
-            data.forEach((item) => {
+            const sorted = [...data].sort((a, b) => {
+                const availA = isItemAvailable(a) ? 1 : 0;
+                const availB = isItemAvailable(b) ? 1 : 0;
+                return availB - availA;
+            });
+
+            sorted.forEach((item) => {
                 if (!item['Nazwa']) return; 
                 const category = normalizeCategory(item['Kategoria'] || item['Kategoria (PL)'] || item['Kategoria1'], item['Nazwa'], item['Opis']);
 
-                const stock = parseFloat(item['Dostępność']);
+                const stock = parseFloat(item['Dostępność'] || item['Dostepnosc']);
                 const maxQty = isFinite(stock) && stock > 0 ? stock : null;
                 const isAvailable = maxQty ? maxQty > 0 : stock > 0;
                 const disabledClass = isAvailable ? '' : 'out-of-stock';
