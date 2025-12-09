@@ -576,13 +576,14 @@
                     </div>
                 </div>`;
                 
-                if (!categories[category]) categories[category] = [];
-                categories[category].push({ name: nazwa, html });
+                if (!categories[category]) categories[category] = { available: [], unavailable: [] };
+                const bucket = isAvailable ? 'available' : 'unavailable';
+                categories[category][bucket].push({ name: nazwa, html });
             });
 
             CATEGORY_ORDER.forEach((catName, i) => {
-                if (!categories[catName] || categories[catName].length === 0) return;
-                const sortedItems = categories[catName].sort((a, b) => {
+                if (!categories[catName] || (categories[catName].available.length === 0 && categories[catName].unavailable.length === 0)) return;
+                const sortedItems = [...categories[catName].available, ...categories[catName].unavailable].sort((a, b) => {
                     if (catName === "Kiełbasy") {
                         const pri = (name) => {
                             const t = name.toLowerCase();
