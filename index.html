@@ -280,9 +280,13 @@
 
         const getAvailability = (item) => {
             const key = Object.keys(item).find(k => normalizeKey(k) === 'dostepnosc');
-            if (!key) return null;
-            const stock = parseFloat(item[key]);
-            return Number.isFinite(stock) ? stock : null;
+            if (!key) return 0;
+            const raw = item[key];
+            if (raw === null || raw === undefined) return 0;
+            const cleaned = String(raw).replace(',', '.').replace(/[^0-9.-]/g, '').trim();
+            if (cleaned === '') return 0;
+            const stock = parseFloat(cleaned);
+            return Number.isFinite(stock) ? stock : 0;
         };
 
         const isItemAvailable = (item) => {
