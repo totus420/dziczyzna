@@ -25,23 +25,98 @@
     <meta property="og:image" content="logo.png" />
     <meta property="og:type" content="website" />
 
+    <!-- Czcionki: Inter (tekst) + Playfair Display (nagłówki) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Playfair+Display:wght@500;700&display=swap" rel="stylesheet">
+
     <style>
-        body { background-color: #fdfbf7; color: #2c3e50; }
-        .accent-bg { background-color: #3f4f3a; }
-        .accent-text { color: #3f4f3a; }
-        .out-of-stock { opacity: 0.5; pointer-events: none; filter: grayscale(100%); }
-        input[type=number]::-webkit-inner-spin-button, 
-        input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+        /* Tło strony + podstawowa typografia */
+        body {
+            font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+            color: #2c3e50;
+            background: radial-gradient(circle at top, #4b5c45 0, #fdfbf7 55%, #f5efe3 100%);
+        }
+
+        /* Serif do nagłówków – nadpisujemy tailwindowe .font-serif */
+        .font-serif {
+            font-family: 'Playfair Display', ui-serif, Georgia, 'Times New Roman', serif;
+        }
+
+        :root {
+            --forest-700: #3f4f3a;
+            --amber-cream-50: #f7f2e8;
+            --amber-cream-100: #eadbc4;
+            --sage-50: #eef3ec;
+            --sage-100: #d7e4d2;
+            --sage-200: #c8d7c3;
+            --sand-50: #f4f1ed;
+            --sand-100: #e7dfd3;
+            --sand-200: #d7c8b4;
+        }
+
+        .accent-bg { background-color: var(--forest-700); }
+        .accent-text { color: var(--forest-700); }
+
+        .section-intro {
+            background-color: var(--amber-cream-50);
+            border: 1px solid var(--amber-cream-100);
+        }
+
+        .section-products {
+            background-color: var(--sage-50);
+            border: 1px solid var(--sage-100);
+        }
+
+        .note-products {
+            background-color: #e5efe0;
+            border: 1px solid var(--sage-200);
+            color: #2f3b2b;
+        }
+
+        .section-form {
+            background-color: var(--sand-50);
+            border: 1px solid var(--sand-100);
+        }
+
+        .note-form {
+            background-color: #ebe2d6;
+            border-left: 4px solid var(--sand-200);
+            color: #4a4134;
+        }
+
+        .cart-panel {
+            background-color: #efebe4;
+            border: 1px solid var(--sand-100);
+        }
+
+        .out-of-stock {
+            opacity: 0.5;
+            pointer-events: none;
+            filter: grayscale(100%);
+        }
+
+        input[type=number]::-webkit-inner-spin-button,
+        input[type=number]::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
     </style>
 </head>
 <body class="font-sans antialiased pb-20">
 
-    <header class="accent-bg text-white py-12 text-center shadow-md">
-        <div class="flex flex-col items-center gap-6">
-            <img src="logo.png" alt="Szlachetna Dziczyzna" class="w-[400px] max-w-[90vw] h-auto drop-shadow-lg">
+    <header class="accent-bg text-white py-8 md:py-10 text-center shadow-md">
+        <div class="flex flex-col items-center gap-4">
+            <img src="logo.png"
+                 alt="Szlachetna Dziczyzna"
+                 class="w-[380px] max-w-[90vw] h-auto drop-shadow-lg">
             <div class="sr-only">
-                <h1>Szlachetna Dziczyzna</h1>
-                <p>Manufaktura wyrobów rzemieślniczych z polskich lasów</p>
+                <h1 class="text-2xl md:text-3xl font-serif tracking-[0.15em] uppercase">
+                    Szlachetna Dziczyzna
+                </h1>
+                <p class="mt-1 text-sm md:text-base tracking-wide uppercase text-amber-100">
+                    Manufaktura wyrobów rzemieślniczych z polskich lasów
+                </p>
             </div>
         </div>
     </header>
@@ -51,79 +126,92 @@
         <form id="order-form" onsubmit="sendOrder(event)">
             <div class="grid md:grid-cols-3 gap-6">
                 <div class="md:col-span-2">
-                    <section class="mb-6 p-4 md:p-5 bg-amber-50 border border-amber-200 rounded-lg shadow-sm">
-                        <h2 class="text-xl font-serif accent-text mb-2">Dlaczego nasza dziczyzna?</h2>
-                        <p class="text-sm text-amber-900 leading-relaxed">
-                            Jeśli chcesz mieć pewność, że w mięsie jest 100% mięsa – bez antybiotyków, bez szczepionek, bez wypełniaczy i bez sztucznej paszy – dobrze trafiłeś. Nasza dziczyzna pochodzi z wolnych zwierząt żyjących w naturalnych warunkach. Starannie wyselekcjonowana i przygotowana według tradycyjnych receptur, z pasją i szacunkiem do natury.
-                        </p>
-                        <p class="text-sm text-amber-900 leading-relaxed mt-3">
-                            Każda partia mięsa jest przebadana przez uprawnionego lekarza weterynarii i dopuszczona do spożycia. Nasze wyroby spełniają wszystkie obowiązujące normy sanitarne, dzięki czemu masz pewność, że kupujesz dziczyznę bezpieczną i najwyższej jakości.
-                        </p>
+                    <section class="mb-6 p-5 md:p-6 section-intro rounded-2xl shadow-sm">
+                        <div class="flex items-start gap-3">
+                            <span class="text-2xl">🌲</span>
+                            <div>
+                                <h2 class="text-xl md:text-2xl font-serif accent-text mb-3">
+                                    Dlaczego nasza dziczyzna?
+                                </h2>
+                                <p class="text-[15px] md:text-base text-amber-900 leading-relaxed">
+                                    Jeśli chcesz mieć pewność, że w mięsie jest
+                                    <span class="font-semibold">100% mięsa – bez antybiotyków, szczepionek i sztucznej paszy</span>,
+                                    dobrze trafiłeś. Nasza dziczyzna pochodzi z wolnych zwierząt żyjących w naturalnych warunkach. Starannie wyselekcjonowana i przygotowana według tradycyjnych receptur, z pasją i szacunkiem do natury.
+                                </p>
+                                <p class="text-[15px] md:text-base text-amber-900 leading-relaxed mt-3">
+                                    Każda partia mięsa jest przebadana przez uprawnionego lekarza weterynarii i dopuszczona do spożycia. Nasze wyroby spełniają wszystkie obowiązujące normy sanitarne, dzięki czemu masz pewność, że kupujesz dziczyznę bezpieczną i najwyższej jakości.
+                                </p>
+                            </div>
+                        </div>
                     </section>
 
-                    <h2 class="text-2xl font-serif mb-2 border-b pb-2 accent-text">Wybierz produkty</h2>
-                    <p class="text-sm text-amber-800 mb-6">Minimalna wartość zamówienia: <strong>200 zł</strong>.</p>
-                    
-                    <div class="space-y-6" id="products-container">
-                        <p class="text-center text-gray-500 py-10">Ładowanie oferty z arkusza...</p>
-                    </div>
-
-                    <!-- Kody rabatowe -->
-                    <div class="mb-4">
-                        <div class="bg-amber-50 border-l-4 border-amber-600 p-4 text-sm text-amber-900">
-                            <p class="font-bold">⚖️ Informacja o wadze:</p>
-                            <p>Waga produktów jest orientacyjna (+/- 10%). Dokładną kwotę podamy po zważeniu produktów.</p>
+                    <section class="mb-8 p-5 md:p-6 section-products rounded-2xl shadow-sm">
+                        <div class="flex items-center justify-between gap-3 flex-wrap">
+                            <h2 class="text-2xl font-serif accent-text">Wybierz produkty</h2>
                         </div>
-                    </div>
+                        <div class="note-products rounded-xl p-4 mt-3 text-sm leading-relaxed">
+                            <p class="font-semibold">Minimalna wartość zamówienia: <strong>200 zł</strong>.</p>
+                            <p class="mt-1">⚖️ Waga produktów jest orientacyjna (+/- 10%). Dokładną kwotę podamy po zważeniu produktów.</p>
+                        </div>
+                        
+                        <div class="space-y-6 mt-6" id="products-container">
+                            <p class="text-center text-gray-500 py-10">Ładowanie oferty z arkusza...</p>
+                        </div>
+                    </section>
 
-                    <div class="mt-8 flex items-center justify-end gap-2">
-                        <input type="text" id="discount-code" placeholder="Kod rabatowy" class="p-2 border rounded text-sm w-40 uppercase">
-                        <button type="button" onclick="applyDiscount()" class="bg-gray-200 hover:bg-gray-300 px-4 py-2 rounded text-sm font-bold">Użyj</button>
-                    </div>
-                    <p id="discount-message" class="text-right text-xs mt-1 text-green-600 font-bold h-4"></p>
+                    <section class="section-form p-5 md:p-6 rounded-2xl shadow-sm">
+                        <h2 class="text-2xl font-serif mb-4 border-b pb-2 accent-text">Dane do dostawy</h2>
+                        
+                        <div class="note-form p-4 mb-6 text-sm rounded-xl">
+                            <p class="font-semibold">🚚 Dostawa:</p>
+                            <p>Dostawy realizujemy <strong>wyłącznie osobiście w poniedziałki</strong>. Zamówienia przyjmowane są od poniedziałku do czwartku.</p>
+                            <p>Dostarczamy do 30 km od Warszawy.</p>
+                        </div>
 
-                    <h2 class="text-2xl font-serif mt-10 mb-6 border-b pb-2 accent-text">Dane do dostawy</h2>
-                    
-                    <div class="bg-green-50 border-l-4 border-green-700 p-4 mb-6 text-sm text-green-900">
-                        <p class="font-bold">🚚 Dostawa:</p>
-                        <p>Dostawy realizujemy <strong>wyłącznie osobiście w poniedziałki</strong>. Zamówienia przyjmowane są od poniedziałku do czwartku.</p>
-                        <p>Dostarczamy do 30 km od Warszawy.</p>
-                    </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <input type="text" name="imie_nazwisko" placeholder="Imię i Nazwisko" required class="p-3 border rounded w-full" autocomplete="name">
+                            <input type="tel" name="telefon" placeholder="Numer telefonu" required class="p-3 border rounded w-full" autocomplete="tel">
+                            <input type="email" name="email" placeholder="Adres Email" required class="p-3 border rounded w-full md:col-span-2" autocomplete="email">
+                            <input type="text" name="miasto" placeholder="Miejscowość" required class="p-3 border rounded w-full" autocomplete="address-level2">
+                            <input type="text" name="ulica" placeholder="Ulica i numer domu" required class="p-3 border rounded w-full" autocomplete="address-line1">
+                            <textarea name="uwagi" placeholder="Uwagi (np. kod do domofonu)" class="p-3 border rounded w-full md:col-span-2" rows="2"></textarea>
+                        </div>
+                        <div id="form-errors" class="text-sm text-red-600 mt-2 hidden"></div>
 
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <input type="text" name="imie_nazwisko" placeholder="Imię i Nazwisko" required class="p-3 border rounded w-full" autocomplete="name">
-                        <input type="tel" name="telefon" placeholder="Numer telefonu" required class="p-3 border rounded w-full" autocomplete="tel">
-                        <input type="email" name="email" placeholder="Adres Email" required class="p-3 border rounded w-full md:col-span-2" autocomplete="email">
-                        <input type="text" name="miasto" placeholder="Miejscowość" required class="p-3 border rounded w-full" autocomplete="address-level2">
-                        <input type="text" name="ulica" placeholder="Ulica i numer domu" required class="p-3 border rounded w-full" autocomplete="address-line1">
-                        <textarea name="uwagi" placeholder="Uwagi (np. kod do domofonu)" class="p-3 border rounded w-full md:col-span-2" rows="2"></textarea>
-                    </div>
-                    <div id="form-errors" class="text-sm text-red-600 mt-2 hidden"></div>
-
-                    <div class="mt-6 text-sm text-gray-600">
-                        <label class="flex items-start gap-2">
-                            <input type="checkbox" required class="mt-1">
-                            <span>Wyrażam zgodę na realizację zamówienia i akceptuję termin dostawy (Czwartek).</span>
-                        </label>
-                    </div>
-
-                    <button type="submit" id="submit-btn" class="w-full accent-bg text-white font-bold py-4 rounded mt-8 hover:opacity-90 transition text-lg shadow-lg">
-                        Złóż zamówienie
-                    </button>
-                    <p id="status-msg" class="text-center mt-4 hidden"></p>
+                        <div class="mt-6 text-sm text-gray-700">
+                            <label class="flex items-start gap-2">
+                                <input type="checkbox" required class="mt-1">
+                                <span>Wyrażam zgodę na realizację zamówienia i akceptuję termin dostawy (Czwartek).</span>
+                            </label>
+                        </div>
+                    </section>
                 </div>
 
                 <!-- PODSUMOWANIE KOSZYKA -->
-                <div class="bg-gray-100 p-6 rounded-lg shadow-inner md:sticky md:top-6 h-fit">
-                    <h3 class="font-bold text-gray-700 border-b pb-2 mb-2">Twój koszyk:</h3>
+                <div class="cart-panel p-6 rounded-2xl shadow-sm md:sticky md:top-6 h-fit space-y-4">
+                    <h3 class="font-bold text-gray-800 border-b pb-2 mb-2">Twój koszyk:</h3>
                     
-                    <div id="cart-summary-list" class="text-sm space-y-2 mb-4 text-gray-600">
-                        <p class="italic text-gray-400">Brak produktów.</p>
+                    <div id="cart-summary-list" class="text-sm space-y-2 mb-2 text-gray-700">
+                        <p class="italic text-gray-500">Brak produktów.</p>
                     </div>
 
-                    <div class="text-right border-t pt-4">
+                    <div class="text-right border-t pt-3">
                         <span class="text-xl">Do zapłaty (orientacyjnie): <strong id="total-price" class="accent-text text-2xl">0.00 zł</strong></span>
                     </div>
+
+                    <div class="pt-2">
+                        <label for="discount-code" class="text-sm font-semibold text-gray-800">Kod rabatowy</label>
+                        <div class="mt-2 flex items-center gap-2">
+                            <input type="text" id="discount-code" placeholder="np. START" class="p-2 border rounded text-sm w-full uppercase">
+                            <button type="button" onclick="applyDiscount()" class="bg-gray-200 hover:bg-gray-300 px-4 py-2 rounded text-sm font-bold whitespace-nowrap">Użyj</button>
+                        </div>
+                        <p id="discount-message" class="text-right text-xs mt-1 text-green-700 font-semibold h-4"></p>
+                    </div>
+
+                    <button type="submit" id="submit-btn" class="w-full accent-bg text-white font-bold py-4 rounded hover:opacity-90 transition text-lg shadow-lg">
+                        Złóż zamówienie
+                    </button>
+                    <p id="status-msg" class="text-center mt-1 hidden text-sm"></p>
                 </div>
             </div>
         </form>
@@ -153,6 +241,83 @@
         const REQUEST_TIMEOUT_MS = 12000;
         let currentDiscount = 0;
         let hasItemsInCart = false;
+
+        const normalizeKey = (str = '') => str
+            .normalize("NFD")
+            .replace(/\p{Diacritic}/gu, '')
+            .toLowerCase()
+            .trim();
+
+        const normalizeImageKey = (str = '') => str
+            .normalize("NFD")
+            .replace(/\p{Diacritic}/gu, '')
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, '-')
+            .replace(/^-+|-+$/g, '');
+
+        const IMAGE_MAP = {
+            [normalizeImageKey('Golonka w puszce 200g')]: 'golonka_puszka.jpeg',
+            [normalizeImageKey('Pasztetowa w słoiku 350ml')]: 'pasztetowa_sloik.jpeg',
+            [normalizeImageKey('Kiełbasa myśliwska z Sarną')]: 'kielbasa.jpeg',
+            [normalizeImageKey('Kiełbasa myśliwska z Jeleniem')]: 'kielbasa2.jpeg',
+            [normalizeImageKey('Kiełbasa myśliwego')]: 'kielbasa_mysliwego.jpeg',
+            [normalizeImageKey('Polędwica łososiowa z Dzika')]: 'poledwica_lososiowa_dzik.jpeg',
+            [normalizeImageKey('Polędwica łososiowa z Jelenia')]: 'poledwica_lososiowa_sarna.jpeg',
+            [normalizeImageKey('Polędwica łososiowa z Sarny')]: 'poledwica_lososiowa_sarna.jpeg',
+            [normalizeImageKey('Szynka z Dzika w ziołach')]: 'szynka_w_ziolach_dzik.jpeg',
+            [normalizeImageKey('Szynka z Jelenia w ziołach')]: 'szynka_w_ziolach_dzik.jpeg',
+            [normalizeImageKey('Szynka z Sarny w ziołach')]: 'szynka_w_ziolach_dzik.jpeg',
+            [normalizeImageKey('Parówki z Dzika')]: 'parowki2.jpeg',
+            [normalizeImageKey('Parówki z Jelenia')]: 'parowki2.jpeg',
+            [normalizeImageKey('Parówki z Daniela')]: 'parowki2.jpeg',
+            [normalizeImageKey('Parówki z Sarny')]: 'parowki2.jpeg',
+            [normalizeImageKey('Kabanos warkocz')]: 'kabanos_warkocz.jpeg',
+            [normalizeImageKey('Kabanos z Dzika')]: 'kabanosy_dzik.jpeg',
+            [normalizeImageKey('Kabanos z Jelenia')]: 'kabanosy_dzik.jpeg',
+            [normalizeImageKey('Kabanos z Sarny')]: 'kabanosy_dzik.jpeg',
+            [normalizeImageKey('Salami dojrzewające z Jelenia')]: 'salami_jelen.jpeg',
+        };
+
+        const getAvailability = (item) => {
+            const key = Object.keys(item).find(k => normalizeKey(k) === 'dostepnosc');
+            if (!key) return 0;
+            const raw = item[key];
+            if (raw === null || raw === undefined) return 0;
+            const cleaned = String(raw).replace(',', '.').replace(/[^0-9.-]/g, '').trim();
+            if (cleaned === '') return 0;
+            const stock = parseFloat(cleaned);
+            return Number.isFinite(stock) ? stock : 0;
+        };
+
+        const isItemAvailable = (item) => {
+            const stock = getAvailability(item);
+            return stock !== null ? stock > 0 : false;
+        };
+
+        const sortCategoryItems = (items, catName) => {
+            const priority = (name) => {
+                const t = name.toLowerCase();
+                if (catName === "Kiełbasy") {
+                    if (t.includes('parów')) return 0;
+                    if (t.includes('kielb') || t.includes('kiełb')) return 1;
+                    if (t.includes('kabanos')) return 2;
+                    return 3;
+                }
+                if (catName === "Wędliny") {
+                    if (t.includes('szynk')) return 0;
+                    if (t.includes('salami')) return 1;
+                    if (t.includes('polęd') || t.includes('poled')) return 2;
+                    return 3;
+                }
+                return 99;
+            };
+            return [...items].sort((a, b) => {
+                const pa = priority(a.name);
+                const pb = priority(b.name);
+                if (pa !== pb && pa !== 99 && pb !== 99) return pa - pb;
+                return a.name.localeCompare(b.name, 'pl');
+            });
+        };
 
         function parsePrice(priceString) {
             if (!priceString) return 0;
@@ -314,11 +479,17 @@
             const categories = {};
             let idx = 0;
 
-            data.forEach((item) => {
+            const sorted = [...data].sort((a, b) => {
+                const availA = isItemAvailable(a) ? 1 : 0;
+                const availB = isItemAvailable(b) ? 1 : 0;
+                return availB - availA;
+            });
+
+            sorted.forEach((item) => {
                 if (!item['Nazwa']) return; 
                 const category = normalizeCategory(item['Kategoria'] || item['Kategoria (PL)'] || item['Kategoria1'], item['Nazwa'], item['Opis']);
 
-                const stock = parseFloat(item['Dostępność']);
+                const stock = getAvailability(item);
                 const maxQty = isFinite(stock) && stock > 0 ? stock : null;
                 const isAvailable = maxQty ? maxQty > 0 : stock > 0;
                 const disabledClass = isAvailable ? '' : 'out-of-stock';
@@ -333,9 +504,10 @@
                 const sklad = item['Skład'] || '';
                 const cena = parsePrice(item['Cena']);
                 const opis = item['Opis'] || '';
-                let imageUrl = item['Zdjęcie'] || item['Zdjecie'] || item['Foto'] || item['Obraz'] || '';
+                const imageKeyName = normalizeImageKey(nazwa);
+                let imageUrl = IMAGE_MAP[imageKeyName] || item['Zdjęcie'] || item['Zdjecie'] || item['Foto'] || item['Obraz'] || '';
                 if (!imageUrl && (nameSlug.includes('kielb') || nameSlug.includes('kiełb'))) {
-                    imageUrl = 'kielbasadzik.jpg';
+                    imageUrl = 'kielbasa.jpeg';
                 }
                 const isSzynka = nameSlug.includes('szynk');
                 const isPoledwica = nameSlug.includes('polęd') || nameSlug.includes('poled');
@@ -377,7 +549,7 @@
                 ` : '';
                 const detailsBlock = hasDetails ? `
                     <div id="${detailsId}" class="mt-2 text-sm text-gray-700 bg-amber-50 border border-amber-100 rounded-lg p-3 hidden">
-                        ${opis ? `<p class="leading-snug">${opis}</p>` : ''}
+                        ${opis ? `<p class="text-sm text-gray-700 leading-relaxed">${opis}</p>` : ''}
                         ${sklad ? `<p class="text-xs italic text-gray-500 mt-2"><span class="font-semibold not-italic text-gray-700">Skład:</span> ${sklad}</p>` : ''}
                         ${expiry ? `<p class="text-xs text-amber-700 font-semibold mt-2">⏳ Ważność: ${expiry}</p>` : ''}
                     </div>
@@ -385,9 +557,9 @@
 
                 const html = `
                 <div class="flex flex-col sm:flex-row justify-between sm:items-start border-b pb-6 product-item ${disabledClass}" data-index="${productIndex}" data-kind="${isSzynka ? 'szynka' : isPoledwica ? 'poledwica' : ''}">
-                    <div class="flex flex-col sm:flex-row gap-4 w-full pr-4">
+                    <div class="flex flex-col sm:flex-row gap-4 w-full p-4 bg-white/80 rounded-xl shadow-sm border border-gray-100">
                         <div class="flex-1 mb-4 sm:mb-0 order-1 sm:order-2">
-                            <h3 class="font-bold text-lg text-gray-800 flex items-center">
+                            <h3 class="text-lg md:text-xl font-semibold accent-text flex items-center">
                                 <span class="text-gray-400 mr-2">${idx}.</span> ${nazwa} ${statusText}
                             </h3>
                             <div class="mt-2 sm:hidden">
@@ -395,12 +567,12 @@
                             </div>
                             ${detailsButton}
                             ${detailsBlock}
-                            <div class="mt-3 inline-flex items-center gap-2 px-3 py-2 bg-amber-100 text-amber-900 rounded-lg shadow-sm">
-                                <span class="text-sm font-semibold">Cena:</span>
-                                <span class="price text-lg font-extrabold tracking-tight" data-price="${cena}">
+                            <div class="mt-3 inline-flex items-center gap-2 px-3 py-2 bg-amber-100/80 text-amber-900 rounded-full shadow-sm">
+                                <span class="text-xs uppercase tracking-wide">Cena</span>
+                                <span class="price text-lg md:text-xl font-extrabold tracking-tight" data-price="${cena}">
                                     ${cena.toFixed(2)} zł
                                 </span>
-                                <span class="text-xs font-semibold text-amber-800">/ ${isSzynka || isPoledwica ? 'kg' : unit}</span>
+                                <span class="text-[11px] uppercase font-semibold text-amber-800">/ ${isSzynka || isPoledwica ? 'kg' : unit}</span>
                             </div>
                         </div>
                         <div class="w-full sm:w-32 flex-shrink-0 order-2 sm:order-1 hidden sm:block">
@@ -410,21 +582,21 @@
                     
                     <div class="flex flex-col items-end sm:items-center mt-2 sm:mt-0">
                         ${variantSelect}
-                        <div class="flex items-center bg-gray-50 p-2 rounded-lg">
-                            <button type="button" onclick="changeQty(${productIndex}, -${step})" class="w-10 h-10 flex items-center justify-center bg-white border rounded hover:bg-gray-100 text-xl font-bold text-gray-600 shadow-sm">-</button>
+                        <div class="flex items-center bg-gray-50 p-2 rounded-full shadow-inner">
+                            <button type="button" onclick="changeQty(${productIndex}, -${step})" class="w-8 h-8 md:w-9 md:h-9 flex items-center justify-center bg-amber-200 text-amber-900 rounded-full hover:bg-amber-300 active:scale-95 transition text-lg">-</button>
                             
                             <input type="number" 
                                 min="0" 
                                 step="${step}" 
                                 placeholder="0" 
                                 id="qty-${productIndex}"
-                                class="qty-input w-20 p-2 mx-2 text-center bg-transparent border-b outline-none font-bold text-lg" 
+                                class="qty-input w-20 md:w-24 p-2 mx-2 text-center bg-transparent border-b-2 border-gray-300 focus:border-amber-700 focus:outline-none text-base" 
                                 name="${nazwa}"
                                 data-unit="${unit}"
                                 data-stock="${maxQty !== null ? maxQty : ''}"
                                 oninput="calculateTotal()">
                             
-                            <button type="button" onclick="changeQty(${productIndex}, ${step})" class="w-10 h-10 flex items-center justify-center bg-white border rounded hover:bg-gray-100 text-xl font-bold text-gray-600 shadow-sm">+</button>
+                            <button type="button" onclick="changeQty(${productIndex}, ${step})" class="w-8 h-8 md:w-9 md:h-9 flex items-center justify-center bg-amber-200 text-amber-900 rounded-full hover:bg-amber-300 active:scale-95 transition text-lg">+</button>
                         </div>
                         <p id="line-total-${productIndex}" class="text-sm font-bold text-green-700 mt-2 opacity-0 transition-opacity duration-200">0.00 zł</p>
                         ${soldOutNote}
@@ -433,39 +605,16 @@
                     </div>
                 </div>`;
                 
-                if (!categories[category]) categories[category] = [];
-                categories[category].push({ name: nazwa, html });
+                if (!categories[category]) categories[category] = { available: [], unavailable: [] };
+                const bucket = isAvailable ? 'available' : 'unavailable';
+                categories[category][bucket].push({ name: nazwa, html });
             });
 
-            CATEGORY_ORDER.forEach((catName) => {
-                if (!categories[catName] || categories[catName].length === 0) return;
-                const sortedItems = categories[catName].sort((a, b) => {
-                    if (catName === "Kiełbasy") {
-                        const pri = (name) => {
-                            const t = name.toLowerCase();
-                            if (t.includes('parów')) return 0;
-                            if (t.includes('kielb') || t.includes('kiełb')) return 1;
-                            if (t.includes('kabanos')) return 2;
-                            return 3;
-                        };
-                        const pa = pri(a.name);
-                        const pb = pri(b.name);
-                        if (pa !== pb) return pa - pb;
-                    }
-                    if (catName === "Wędliny") {
-                        const pri = (name) => {
-                            const t = name.toLowerCase();
-                            if (t.includes('szynk')) return 0;
-                            if (t.includes('salami')) return 1;
-                            if (t.includes('polęd') || t.includes('poled')) return 2;
-                            return 3;
-                        };
-                        const pa = pri(a.name);
-                        const pb = pri(b.name);
-                        if (pa !== pb) return pa - pb;
-                    }
-                    return a.name.localeCompare(b.name, 'pl');
-                });
+            CATEGORY_ORDER.forEach((catName, i) => {
+                if (!categories[catName] || (categories[catName].available.length === 0 && categories[catName].unavailable.length === 0)) return;
+                const availableSorted = sortCategoryItems(categories[catName].available, catName);
+                const unavailableSorted = sortCategoryItems(categories[catName].unavailable, catName);
+                const sortedItems = [...availableSorted, ...unavailableSorted];
                 let localIdx = 1;
                 const rendered = sortedItems.map(item => {
                     const numbered = item.html.replace(/<span class="text-gray-400 mr-2">.*?<\/span>/, `<span class="text-gray-400 mr-2">${localIdx}.<\/span>`);
@@ -473,13 +622,16 @@
                     return numbered;
                 });
                 const sectionId = `cat-${slugifyCategory(catName)}`;
+                const isOpen = i === 0;
                 const sectionHtml = `
                 <div class="category-section border rounded-lg mb-4 overflow-hidden">
-                    <button type="button" class="w-full flex justify-between items-center bg-gray-50 px-4 py-3 font-bold accent-text text-left" onclick="toggleCategory('${sectionId}')">
+                    <button type="button"
+                        class="w-full flex justify-between items-center bg-gray-50 px-4 py-3 font-semibold accent-text text-left border-b border-gray-200"
+                        onclick="toggleCategory('${sectionId}')">
                         <span>${catName}</span>
-                        <span id="${sectionId}-chevron" class="transition-transform rotate-180">▼</span>
+                        <span id="${sectionId}-chevron" class="transition-transform ${isOpen ? 'rotate-180' : ''}">▼</span>
                     </button>
-                    <div id="${sectionId}" class="category-body divide-y hidden">
+                    <div id="${sectionId}" class="category-body ${isOpen ? '' : 'hidden'} divide-y">
                         ${rendered.join('')}
                     </div>
                 </div>`;
