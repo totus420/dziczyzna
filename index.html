@@ -265,8 +265,8 @@
             [normalizeImageKey('Polędwica łososiowa z Jelenia')]: 'poledwica_lososiowa_sarna.jpeg',
             [normalizeImageKey('Polędwica łososiowa z Sarny')]: 'poledwica_lososiowa_sarna.jpeg',
             [normalizeImageKey('Szynka z Dzika w ziołach')]: 'szynka_w_ziolach_dzik.jpeg',
-            [normalizeImageKey('Szynka z Jelenia w ziołach')]: 'szynka_w_ziolach_dzik.jpeg',
-            [normalizeImageKey('Szynka z Sarny w ziołach')]: 'szynka_w_ziolach_dzik.jpeg',
+            [normalizeImageKey('Szynka z Jelenia w ziołach')]: 'szynka_w_ziolach_jelen.jpeg',
+            [normalizeImageKey('Szynka z Sarny w ziołach')]: 'szynka_w_ziolach_jelen.jpeg',
             [normalizeImageKey('Parówki z Dzika')]: 'parowki2.jpeg',
             [normalizeImageKey('Parówki z Jelenia')]: 'parowki2.jpeg',
             [normalizeImageKey('Parówki z Daniela')]: 'parowki2.jpeg',
@@ -516,7 +516,7 @@
                     step = 1;
                 }
                 const imageBlock = imageUrl ? `
-                    <img src="${imageUrl}" alt="Zdjęcie produktu ${nazwa}" class="w-full h-32 object-cover rounded-lg border shadow-sm">
+                    <img src="${imageUrl}" alt="Zdjęcie produktu ${nazwa}" class="w-full h-32 object-contain rounded-lg border shadow-sm bg-white">
                 ` : `
                     <div class="w-full h-32 bg-gray-100 text-gray-400 text-xs rounded-lg border flex items-center justify-center">
                         Brak zdjęcia
