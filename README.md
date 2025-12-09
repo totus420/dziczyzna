@@ -146,8 +146,30 @@ function updateStock(ss, items) {
 2. W arkuszu produktów zadbaj o kolumny `Nazwa`, `Dostępność` (lub `Dostepnosc`), `Cena`, `Jednostka`, `Opis`, `Skład`, opcjonalnie `Zdjęcie`.
 3. Licznik numerów: zarządzany w `ScriptProperties` (reset przez usunięcie klucza `orderCounter` lub zmianę `COUNTER_MIN` i redeploy).
 
+## Branching i publikacja
+- Podgląd: branch `ui-tweaks` jest źródłem GitHub Pages (testy i demo). Zmiany testowe wrzucamy tam.
+- Produkcja: branch `main` jest źródłem deployu na home.pl przez FTP.
+- Zasada: najpierw commit/push na branch roboczy (np. `ui-tweaks`), test na Pages, potem po akceptacji merge do `main` i push → automatyczny deploy na home.pl.
+
+## Automatyczny deploy (home.pl)
+- Workflow: `.github/workflows/deploy.yml`, odpala się na push do `main` lub ręcznie z Actions.
+- Wymagane GitHub Secrets (Repository secrets):
+  - `FTP_HOST` – host FTP z panelu home.pl (np. `serwer12345.home.pl`)
+  - `FTP_USERNAME` – użytkownik FTP
+  - `FTP_PASSWORD` – hasło FTP
+  - `FTP_REMOTE_DIR` – katalog docelowy, np. `/public_html/szlachetnadziczyzna/`
+- Po puszu do `main`:
+  - Actions → run „Deploy to home.pl”; w logach widać listę przesłanych plików.
+  - Na serwerze pojawia się `.ftp-deploy-sync-state` (nie usuwać, to stan różnicowy).
+- Jeżeli w panelu włączone FTPS/SFTP, w workflow można zmienić `protocol: ftp` na `ftps` lub `sftp`.
+
+## Jak pracować na branchach
+- Start pracy: `git checkout ui-tweaks` (lub inny feature branch), `git pull`.
+- Wprowadzaj zmiany, commituj i `git push origin ui-tweaks` → podgląd na GitHub Pages.
+- Akceptacja: merge `ui-tweaks` → `main`, potem `git push origin main` → deploy na home.pl ruszy automatycznie.
+- Nie commitujemy `main` bez review/akceptacji (produkcyjny deploy rusza od razu).
+
 ## Znane ograniczenia / notatki
 - Web App nie zwraca nagłówków CORS z `ContentService`; front ma fallback (CORS→no-cors). Brak wglądu w błędy sieciowe po stronie frontu w trybie no-cors.
 - Numery zamówień są globalne dla deploymentu GAS (nie unikalne między różnymi wdrożeniami).
 - Stany magazynowe: wymagają zgodności nazw w `line_items.name` z kolumną `Nazwa` po normalizacji (małe litery, bez polskich znaków).
-
