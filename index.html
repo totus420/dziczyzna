@@ -242,6 +242,36 @@
         let currentDiscount = 0;
         let hasItemsInCart = false;
 
+        const normalizeImageKey = (str = '') => str
+            .normalize("NFD")
+            .replace(/\p{Diacritic}/gu, '')
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, '-')
+            .replace(/^-+|-+$/g, '');
+
+        const IMAGE_MAP = {
+            [normalizeImageKey('Golonka w puszce 200g')]: 'golonka_puszka.jpeg',
+            [normalizeImageKey('Pasztetowa w słoiku 350ml')]: 'pasztetowa_sloik.jpeg',
+            [normalizeImageKey('Kiełbasa myśliwska z Sarną')]: 'kielbasa.jpeg',
+            [normalizeImageKey('Kiełbasa myśliwska z Jeleniem')]: 'kielbasa2.jpeg',
+            [normalizeImageKey('Kiełbasa myśliwego')]: 'kielbasa_mysliwego.jpeg',
+            [normalizeImageKey('Polędwica łososiowa z Dzika')]: 'poledwica_lososiowa_dzik.jpeg',
+            [normalizeImageKey('Polędwica łososiowa z Jelenia')]: 'poledwica_lososiowa_sarna.jpeg',
+            [normalizeImageKey('Polędwica łososiowa z Sarny')]: 'poledwica_lososiowa_sarna.jpeg',
+            [normalizeImageKey('Szynka z Dzika w ziołach')]: 'szynka_w_ziolach_dzik.jpeg',
+            [normalizeImageKey('Szynka z Jelenia w ziołach')]: 'szynka_w_ziolach_dzik.jpeg',
+            [normalizeImageKey('Szynka z Sarny w ziołach')]: 'szynka_w_ziolach_dzik.jpeg',
+            [normalizeImageKey('Parówki z Dzika')]: 'parowki.jpeg',
+            [normalizeImageKey('Parówki z Jelenia')]: 'parowki2.jpeg',
+            [normalizeImageKey('Parówki z Daniela')]: 'parowki2.jpeg',
+            [normalizeImageKey('Parówki z Sarny')]: 'parowki2.jpeg',
+            [normalizeImageKey('Kabanos warkocz')]: 'kabanos_warkocz.jpeg',
+            [normalizeImageKey('Kabanos z Dzika')]: 'kabanosy_dzik.jpeg',
+            [normalizeImageKey('Kabanos z Jelenia')]: 'kabanos_warkocz.jpeg',
+            [normalizeImageKey('Kabanos z Sarny')]: 'kabanos_warkocz.jpeg',
+            [normalizeImageKey('Salami dojrzewające z Jelenia')]: 'salami_jelen.jpeg',
+        };
+
         function parsePrice(priceString) {
             if (!priceString) return 0;
             let cleanString = priceString.toString().replace(/zł/g, '').replace(/,/g, '.').trim();
@@ -421,9 +451,10 @@
                 const sklad = item['Skład'] || '';
                 const cena = parsePrice(item['Cena']);
                 const opis = item['Opis'] || '';
-                let imageUrl = item['Zdjęcie'] || item['Zdjecie'] || item['Foto'] || item['Obraz'] || '';
+                const imageKeyName = normalizeImageKey(nazwa);
+                let imageUrl = IMAGE_MAP[imageKeyName] || item['Zdjęcie'] || item['Zdjecie'] || item['Foto'] || item['Obraz'] || '';
                 if (!imageUrl && (nameSlug.includes('kielb') || nameSlug.includes('kiełb'))) {
-                    imageUrl = 'kielbasadzik.jpg';
+                    imageUrl = 'kielbasa.jpeg';
                 }
                 const isSzynka = nameSlug.includes('szynk');
                 const isPoledwica = nameSlug.includes('polęd') || nameSlug.includes('poled');
