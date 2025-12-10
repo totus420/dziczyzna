@@ -152,6 +152,14 @@
                         <div class="note-products rounded-xl p-4 mt-3 text-sm leading-relaxed">
                             <p class="font-semibold">Minimalna wartość zamówienia: <strong>200 zł</strong>.</p>
                             <p class="mt-1">⚖️ Waga produktów jest orientacyjna (+/- 10%). Dokładną kwotę podamy po zważeniu produktów.</p>
+                            <p class="mt-2 font-semibold text-amber-900">Przyjęte średnie wagi sztuk:</p>
+                            <ul class="list-disc pl-5 text-amber-900 space-y-1 mt-1">
+                                <li>Salami: 0,5 kg / szt.</li>
+                                <li>Polędwica: 0,6 kg / szt.</li>
+                                <li>Szynka: MAŁA 0,5 kg / szt, DUŻA 0,85 kg / szt.</li>
+                                <li>Kabanos warkocz: 0,5 kg / szt.</li>
+                                <li>Kiełbasa myśliwego: 0,5 kg / szt.</li>
+                            </ul>
                         </div>
                         
                         <div class="space-y-6 mt-6" id="products-container">
@@ -241,6 +249,29 @@
         const REQUEST_TIMEOUT_MS = 12000;
         let currentDiscount = 0;
         let hasItemsInCart = false;
+
+        const PRODUCT_RULES = [
+            { key: 'salami', match: (name) => name.includes('salami'), unit: 'szt', factor: 0.5, note: 'Średnia waga sztuki: 0,5 kg.' },
+            { key: 'poledwica', match: (name) => name.includes('poledw') || name.includes('poled'), unit: 'szt', factor: 0.6, note: 'Średnia waga sztuki: 0,6 kg.' },
+            { key: 'szynka', match: (name) => name.includes('szynk'), unit: 'szt', variants: [
+                { label: 'MAŁA 0,5 kg', factor: 0.5 },
+                { label: 'DUŻA 0,85 kg', factor: 0.85 },
+            ], note: 'Średnia waga sztuki: 0,5 kg (MAŁA) lub 0,85 kg (DUŻA).' },
+            { key: 'kabanos-warkocz', match: (name) => name.includes('kabanos warkocz'), unit: 'szt', factor: 0.5, note: 'Średnia waga sztuki: 0,5 kg.' },
+            { key: 'kielbasa-mysliwego', match: (name) => name.includes('mysliweg'), unit: 'szt', factor: 0.5, note: 'Średnia waga sztuki: 0,5 kg.' },
+            { key: 'pasztetowa-sloik', match: (name) => name.includes('pasztetowa w sloiku') || name.includes('pasztetowa w słoiku'), unit: 'szt', factor: 1 },
+            { key: 'golonka-puszka', match: (name) => name.includes('golonka w puszce'), unit: 'szt', factor: 1 },
+        ];
+
+        const PRODUCT_RULES_MAP = PRODUCT_RULES.reduce((acc, rule) => {
+            acc[rule.key] = rule;
+            return acc;
+        }, {});
+
+        const findProductRule = (nameRaw = '') => {
+            const name = normalizeKey(nameRaw);
+            return PRODUCT_RULES.find((rule) => rule.match(name)) || null;
+        };
 
         const normalizeKey = (str = '') => str
             .normalize("NFD")
@@ -498,22 +529,27 @@
                 
                 const nazwa = item['Nazwa'];
                 const nameSlug = (nazwa || '').toString().toLowerCase();
-                let unit = item['Jednostka'] || 'kg';
+                const cena = parsePrice(item['Cena']);
+                const rule = findProductRule(nazwa);
+                const isSzynka = rule?.key === 'szynka';
+                const isPoledwica = rule?.key === 'poledwica';
+                let unit = (item['Jednostka'] || 'kg').toString();
+                let displayUnit = unit.trim();
                 let step = unit.toLowerCase().includes('szt') ? 1 : 0.1;
+                let displayPrice = cena;
+                if (rule) {
+                    displayUnit = 'szt';
+                    step = 1;
+                    const factor = rule.variants ? rule.variants[0].factor : (rule.factor || 1);
+                    displayPrice = cena * factor;
+                }
                 const expiry = item['Ważność'];
                 const sklad = item['Skład'] || '';
-                const cena = parsePrice(item['Cena']);
                 const opis = item['Opis'] || '';
                 const imageKeyName = normalizeImageKey(nazwa);
                 let imageUrl = IMAGE_MAP[imageKeyName] || item['Zdjęcie'] || item['Zdjecie'] || item['Foto'] || item['Obraz'] || '';
                 if (!imageUrl && (nameSlug.includes('kielb') || nameSlug.includes('kiełb'))) {
                     imageUrl = 'kielbasa.jpeg';
-                }
-                const isSzynka = nameSlug.includes('szynk');
-                const isPoledwica = nameSlug.includes('polęd') || nameSlug.includes('poled');
-                if (isSzynka || isPoledwica) {
-                    unit = 'szt';
-                    step = 1;
                 }
                 const imageBlock = imageUrl ? `
                     <img src="${imageUrl}" alt="Zdjęcie produktu ${nazwa}" class="w-full h-32 object-contain rounded-lg border shadow-sm bg-white">
@@ -522,23 +558,28 @@
                         Brak zdjęcia
                     </div>
                 `;
+                const productIndex = idx;
+                idx += 1;
+                const variantOptions = isSzynka
+                    ? PRODUCT_RULES_MAP.szynka.variants.map((variant) => `<option value="${variant.label}" data-factor="${variant.factor}">${variant.label}</option>`).join('')
+                    : '';
                 const variantSelect = isSzynka ? `
                     <label class="w-full text-xs font-semibold text-amber-800 mb-2">
                         Wybierz wielkość:
-                        <select id="variant-${idx}" class="mt-1 w-full border rounded-lg p-2 text-sm">
-                            <option value="MAŁA 0,4-0,6 kg">MAŁA 0,4-0,6 kg</option>
-                            <option value="DUŻA 0,7-1,0 kg">DUŻA 0,7-1,0 kg</option>
+                        <select id="variant-${productIndex}" class="mt-1 w-full border rounded-lg p-2 text-sm" onchange="updateVariantPrice(${productIndex})">
+                            ${variantOptions}
                         </select>
                     </label>
                 ` : '';
                 const poledwicaNote = isPoledwica ? `
                     <div class="mt-2 text-xs font-semibold text-amber-800">
-                        Kawałki ok. 0,5-0,7 kg. Ilość w sztukach.
+                        Sprzedaż w sztukach; finalna kwota po zważeniu.
                     </div>
                 ` : '';
+                const weightNote = rule && rule.note ? `
+                    <p class="text-xs text-amber-800 mt-1">${rule.note}</p>
+                ` : '';
 
-                const productIndex = idx;
-                idx += 1;
                 const hasDetails = Boolean(opis || sklad || expiry);
                 const detailsId = `details-${productIndex}`;
                 const detailsButton = hasDetails ? `
@@ -556,7 +597,7 @@
                 ` : '';
 
                 const html = `
-                <div class="flex flex-col sm:flex-row justify-between sm:items-start border-b pb-6 product-item ${disabledClass}" data-index="${productIndex}" data-kind="${isSzynka ? 'szynka' : isPoledwica ? 'poledwica' : ''}">
+                <div class="flex flex-col sm:flex-row justify-between sm:items-start border-b pb-6 product-item ${disabledClass}" data-index="${productIndex}" data-kind="${rule ? rule.key : ''}" data-rule="${rule ? rule.key : ''}" data-base-price="${cena}">
                     <div class="flex flex-col sm:flex-row gap-4 w-full p-4 bg-white/80 rounded-xl shadow-sm border border-gray-100">
                         <div class="flex-1 mb-4 sm:mb-0 order-1 sm:order-2">
                             <h3 class="text-lg md:text-xl font-semibold accent-text flex items-center">
@@ -569,11 +610,12 @@
                             ${detailsBlock}
                             <div class="mt-3 inline-flex items-center gap-2 px-3 py-2 bg-amber-100/80 text-amber-900 rounded-full shadow-sm">
                                 <span class="text-xs uppercase tracking-wide">Cena</span>
-                                <span class="price text-lg md:text-xl font-extrabold tracking-tight" data-price="${cena}">
-                                    ${cena.toFixed(2)} zł
+                                <span class="price text-lg md:text-xl font-extrabold tracking-tight" data-price="${cena}" data-base-price="${cena}">
+                                    ${displayPrice.toFixed(2)} zł
                                 </span>
-                                <span class="text-[11px] uppercase font-semibold text-amber-800">/ ${isSzynka || isPoledwica ? 'kg' : unit}</span>
+                                <span class="text-[11px] uppercase font-semibold text-amber-800">/ ${displayUnit}</span>
                             </div>
+                            ${weightNote}
                         </div>
                         <div class="w-full sm:w-32 flex-shrink-0 order-2 sm:order-1 hidden sm:block">
                             ${imageBlock}
@@ -588,19 +630,19 @@
                             <input type="number" 
                                 min="0" 
                                 step="${step}" 
-                                placeholder="0" 
-                                id="qty-${productIndex}"
-                                class="qty-input w-20 md:w-24 p-2 mx-2 text-center bg-transparent border-b-2 border-gray-300 focus:border-amber-700 focus:outline-none text-base" 
-                                name="${nazwa}"
-                                data-unit="${unit}"
-                                data-stock="${maxQty !== null ? maxQty : ''}"
-                                oninput="calculateTotal()">
+                            placeholder="0" 
+                            id="qty-${productIndex}"
+                            class="qty-input w-20 md:w-24 p-2 mx-2 text-center bg-transparent border-b-2 border-gray-300 focus:border-amber-700 focus:outline-none text-base" 
+                            name="${nazwa}"
+                            data-unit="${displayUnit}"
+                            data-stock="${maxQty !== null ? maxQty : ''}"
+                            oninput="calculateTotal()">
                             
                             <button type="button" onclick="changeQty(${productIndex}, ${step})" class="w-8 h-8 md:w-9 md:h-9 flex items-center justify-center bg-amber-200 text-amber-900 rounded-full hover:bg-amber-300 active:scale-95 transition text-lg">+</button>
                         </div>
                         <p id="line-total-${productIndex}" class="text-sm font-bold text-green-700 mt-2 opacity-0 transition-opacity duration-200">0.00 zł</p>
                         ${soldOutNote}
-                        ${maxQty ? `<span class="text-xs text-amber-700 font-semibold mt-1 block">Zostało ostatnie ${maxQty} ${unit}.</span>` : ''}
+                        ${maxQty ? `<span class="text-xs text-amber-700 font-semibold mt-1 block">Zostało ostatnie ${maxQty} ${displayUnit}.</span>` : ''}
                         ${poledwicaNote}
                     </div>
                 </div>`;
@@ -701,18 +743,17 @@
                 const nameBase = nameRaw.replace(/^\d+\.?\s*/, '');
                 const variant = getVariantLabel(index);
                 const name = variant ? `${nameBase} (${variant})` : nameBase;
-                const price = parseFloat(item.querySelector('.price').dataset.price);
+                const priceEl = item.querySelector('.price');
+                const price = parseFloat(item.dataset.basePrice || priceEl?.dataset.basePrice || priceEl?.dataset.price) || 0;
                 const input = item.querySelector('.qty-input');
                 const unit = input.dataset.unit;
                 const stepVal = parseFloat(input.step) || 0.1;
                 const qty = sanitizeQtyInput(input);
-                const kind = item.dataset.kind || '';
+                const ruleKey = item.dataset.rule || '';
+                const rule = PRODUCT_RULES_MAP[ruleKey];
                 let factor = 1;
-                if (kind === 'szynka') {
-                    const variant = getVariantLabel(index);
-                    factor = (variant && variant.toLowerCase().includes('duż')) ? 0.85 : 0.5;
-                } else if (kind === 'poledwica') {
-                    factor = 0.6;
+                if (rule) {
+                    factor = rule.variants ? getVariantFactor(index) : (rule.factor || 1);
                 }
 
                 const lineTotal = price * qty * factor;
@@ -818,6 +859,27 @@
         function getVariantLabel(index) {
             const select = document.getElementById(`variant-${index}`);
             return select ? select.value : '';
+        }
+
+        function getVariantFactor(index) {
+            const select = document.getElementById(`variant-${index}`);
+            if (!select) return 1;
+            const option = select.options[select.selectedIndex];
+            const factorRaw = option?.dataset.factor;
+            const factor = factorRaw ? parseFloat(factorRaw) : parseFloat(select.value);
+            return Number.isFinite(factor) ? factor : 1;
+        }
+
+        window.updateVariantPrice = function(index) {
+            const item = document.querySelector(`.product-item[data-index="${index}"]`);
+            if (!item) return;
+            const priceEl = item.querySelector('.price');
+            const basePrice = parseFloat(item.dataset.basePrice || priceEl?.dataset.basePrice || priceEl?.dataset.price);
+            const factor = getVariantFactor(index);
+            if (Number.isFinite(basePrice) && priceEl) {
+                priceEl.textContent = `${(basePrice * factor).toFixed(2)} zł`;
+            }
+            calculateTotal();
         }
 
         window.sendOrder = async function(e) {
