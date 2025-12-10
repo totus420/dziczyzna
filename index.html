@@ -273,6 +273,27 @@
             return PRODUCT_RULES.find((rule) => rule.match(name)) || null;
         };
 
+        const getFieldValue = (item = {}, target = '') => {
+            const targetKey = normalizeKey(target);
+            const matchKey = Object.keys(item).find((key) => normalizeKey(key) === targetKey);
+            return matchKey ? item[matchKey] : undefined;
+        };
+
+        const parseStockValue = (raw) => {
+            if (raw === null || raw === undefined) return null;
+            const cleaned = String(raw).replace(',', '.').replace(/[^0-9.-]/g, '').trim();
+            if (cleaned === '') return null;
+            const val = parseFloat(cleaned);
+            return Number.isFinite(val) ? val : null;
+        };
+
+        const getVariantStocks = (item = {}) => {
+            return {
+                small: parseStockValue(getFieldValue(item, 'Dostępność (mała)')),
+                large: parseStockValue(getFieldValue(item, 'Dostępność (duża)'))
+            };
+        };
+
         const normalizeKey = (str = '') => str
             .normalize("NFD")
             .replace(/\p{Diacritic}/gu, '')
@@ -310,14 +331,17 @@
         };
 
         const getAvailability = (item) => {
+            const small = parseStockValue(getFieldValue(item, 'Dostępność (mała)'));
+            const large = parseStockValue(getFieldValue(item, 'Dostępność (duża)'));
+            if (small !== null || large !== null) {
+                const sum = (small || 0) + (large || 0);
+                return sum || 0;
+            }
             const key = Object.keys(item).find(k => normalizeKey(k) === 'dostepnosc');
             if (!key) return 0;
             const raw = item[key];
-            if (raw === null || raw === undefined) return 0;
-            const cleaned = String(raw).replace(',', '.').replace(/[^0-9.-]/g, '').trim();
-            if (cleaned === '') return 0;
-            const stock = parseFloat(cleaned);
-            return Number.isFinite(stock) ? stock : 0;
+            const stock = parseStockValue(raw);
+            return stock || 0;
         };
 
         const isItemAvailable = (item) => {
@@ -533,6 +557,7 @@
                 const rule = findProductRule(nazwa);
                 const isSzynka = rule?.key === 'szynka';
                 const isPoledwica = rule?.key === 'poledwica';
+                const variantStocks = isSzynka ? getVariantStocks(item) : {};
                 let unit = (item['Jednostka'] || 'kg').toString();
                 let displayUnit = unit.trim();
                 let step = unit.toLowerCase().includes('szt') ? 1 : 0.1;
@@ -579,6 +604,15 @@
                 const weightNote = rule && rule.note ? `
                     <p class="text-xs text-amber-800 mt-1">${rule.note}</p>
                 ` : '';
+                const variantKeyFromLabel = (label) => normalizeKey(label).includes('duz') ? 'large' : 'small';
+                const initialVariant = isSzynka ? PRODUCT_RULES_MAP.szynka.variants[0] : null;
+                const initialVariantKey = isSzynka ? variantKeyFromLabel(initialVariant.label) : null;
+                const initialStock = isSzynka ? variantStocks[initialVariantKey] : (maxQty !== null ? maxQty : null);
+                const stockNote = isSzynka ? `
+                    <p id="stock-note-${productIndex}" class="text-xs text-amber-800 mt-1 ${initialStock === null ? 'hidden' : ''}">
+                        Dostępne: ${initialStock !== null ? initialStock : ''} szt.
+                    </p>
+                ` : '';
 
                 const hasDetails = Boolean(opis || sklad || expiry);
                 const detailsId = `details-${productIndex}`;
@@ -595,9 +629,11 @@
                         ${expiry ? `<p class="text-xs text-amber-700 font-semibold mt-2">⏳ Ważność: ${expiry}</p>` : ''}
                     </div>
                 ` : '';
-
+                const szynkaStockAttrs = isSzynka
+                    ? ` data-small-stock="${variantStocks.small ?? ''}" data-large-stock="${variantStocks.large ?? ''}"`
+                    : '';
                 const html = `
-                <div class="flex flex-col sm:flex-row justify-between sm:items-start border-b pb-6 product-item ${disabledClass}" data-index="${productIndex}" data-kind="${rule ? rule.key : ''}" data-rule="${rule ? rule.key : ''}" data-base-price="${cena}">
+                <div class="flex flex-col sm:flex-row justify-between sm:items-start border-b pb-6 product-item ${disabledClass}" data-index="${productIndex}" data-kind="${rule ? rule.key : ''}" data-rule="${rule ? rule.key : ''}" data-base-price="${cena}"${szynkaStockAttrs}>
                     <div class="flex flex-col sm:flex-row gap-4 w-full p-4 bg-white/80 rounded-xl shadow-sm border border-gray-100">
                         <div class="flex-1 mb-4 sm:mb-0 order-1 sm:order-2">
                             <h3 class="text-lg md:text-xl font-semibold accent-text flex items-center">
@@ -635,14 +671,14 @@
                             class="qty-input w-20 md:w-24 p-2 mx-2 text-center bg-transparent border-b-2 border-gray-300 focus:border-amber-700 focus:outline-none text-base" 
                             name="${nazwa}"
                             data-unit="${displayUnit}"
-                            data-stock="${maxQty !== null ? maxQty : ''}"
+                            data-stock="${initialStock !== null ? initialStock : ''}"
                             oninput="calculateTotal()">
                             
                             <button type="button" onclick="changeQty(${productIndex}, ${step})" class="w-8 h-8 md:w-9 md:h-9 flex items-center justify-center bg-amber-200 text-amber-900 rounded-full hover:bg-amber-300 active:scale-95 transition text-lg">+</button>
                         </div>
                         <p id="line-total-${productIndex}" class="text-sm font-bold text-green-700 mt-2 opacity-0 transition-opacity duration-200">0.00 zł</p>
                         ${soldOutNote}
-                        ${maxQty ? `<span class="text-xs text-amber-700 font-semibold mt-1 block">Zostało ostatnie ${maxQty} ${displayUnit}.</span>` : ''}
+                        ${isSzynka ? stockNote : (maxQty ? `<span class="text-xs text-amber-700 font-semibold mt-1 block">Zostało ostatnie ${maxQty} ${displayUnit}.</span>` : '')}
                         ${poledwicaNote}
                     </div>
                 </div>`;
@@ -861,6 +897,10 @@
             return select ? select.value : '';
         }
 
+        function getVariantKey(label = '') {
+            return normalizeKey(label).includes('duz') ? 'large' : 'small';
+        }
+
         function getVariantFactor(index) {
             const select = document.getElementById(`variant-${index}`);
             if (!select) return 1;
@@ -876,6 +916,24 @@
             const priceEl = item.querySelector('.price');
             const basePrice = parseFloat(item.dataset.basePrice || priceEl?.dataset.basePrice || priceEl?.dataset.price);
             const factor = getVariantFactor(index);
+            const variantLabel = getVariantLabel(index);
+            const variantKey = getVariantKey(variantLabel);
+            const stockNote = document.getElementById(`stock-note-${index}`);
+            const stockValueRaw = variantKey === 'large' ? item.dataset.largeStock : item.dataset.smallStock;
+            const stockValue = parseStockValue(stockValueRaw);
+            const qtyInput = document.getElementById(`qty-${index}`);
+            if (qtyInput) {
+                qtyInput.dataset.stock = stockValue !== null ? stockValue : '';
+                sanitizeQtyInput(qtyInput);
+            }
+            if (stockNote) {
+                if (stockValue !== null) {
+                    stockNote.textContent = `Dostępne: ${stockValue} szt.`;
+                    stockNote.classList.remove('hidden');
+                } else {
+                    stockNote.classList.add('hidden');
+                }
+            }
             if (Number.isFinite(basePrice) && priceEl) {
                 priceEl.textContent = `${(basePrice * factor).toFixed(2)} zł`;
             }
