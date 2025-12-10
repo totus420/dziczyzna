@@ -530,7 +530,7 @@
                 const variantSelect = isSzynka ? `
                     <label class="w-full text-xs font-semibold text-amber-800 mb-2">
                         Wybierz wielkość:
-                        <select id="variant-${idx}" class="mt-1 w-full border rounded-lg p-2 text-sm">
+                        <select id="variant-${idx}" class="mt-1 w-full border rounded-lg p-2 text-sm" onchange="handleVariantChange(${idx})">
                             <option value="MAŁA 0,4-0,6 kg">MAŁA 0,4-0,6 kg</option>
                             <option value="DUŻA 0,7-1,0 kg">DUŻA 0,7-1,0 kg</option>
                         </select>
@@ -579,10 +579,10 @@
                             ${detailsBlock}
                             <div class="mt-3 inline-flex items-center gap-2 px-3 py-2 bg-amber-100/80 text-amber-900 rounded-full shadow-sm">
                                 <span class="text-xs uppercase tracking-wide">Cena</span>
-                                <span class="price text-lg md:text-xl font-extrabold tracking-tight" data-price="${cena}">
+                                <span class="price text-lg md:text-xl font-extrabold tracking-tight" data-price="${cena}" data-base-unit="${unit}">
                                     ${cena.toFixed(2)} zł
                                 </span>
-                                <span class="text-[11px] uppercase font-semibold text-amber-800">/ ${isSzynka || isPoledwica || isSalami ? 'kg' : unit}</span>
+                                <span class="text-[11px] uppercase font-semibold text-amber-800 price-unit">/ ${isSzynka || isPoledwica || isSalami ? 'szt' : unit}</span>
                             </div>
                         </div>
                         <div class="w-full sm:w-32 flex-shrink-0 order-2 sm:order-1 hidden sm:block">
@@ -712,20 +712,21 @@
                 const nameBase = nameRaw.replace(/^\d+\.?\s*/, '');
                 const variant = getVariantLabel(index);
                 const name = variant ? `${nameBase} (${variant})` : nameBase;
-                const price = parseFloat(item.querySelector('.price').dataset.price);
+                const priceEl = item.querySelector('.price');
+                const price = parseFloat(priceEl.dataset.price);
                 const input = item.querySelector('.qty-input');
                 const unit = input.dataset.unit;
                 const stepVal = parseFloat(input.step) || 0.1;
                 const qty = sanitizeQtyInput(input);
                 const kind = item.dataset.kind || '';
-                let factor = 1;
-                if (kind === 'szynka') {
-                    const variant = getVariantLabel(index);
-                    factor = (variant && variant.toLowerCase().includes('duż')) ? 0.85 : 0.5;
-                } else if (kind === 'poledwica') {
-                    factor = 0.6;
-                } else if (kind === 'salami') {
-                    factor = 0.5; // ok. 0,5 kg za sztukę
+                const factor = getPieceFactor(input, kind, index);
+
+                const displayUnit = (unit.toLowerCase().includes('szt') || kind === 'szynka' || kind === 'poledwica' || kind === 'salami') ? 'szt' : unit;
+                const displayPrice = price * factor;
+                const unitEl = item.querySelector('.price-unit');
+                if (unitEl) unitEl.textContent = `/ ${displayUnit}`;
+                if (priceEl && !isNaN(displayPrice)) {
+                    priceEl.textContent = `${displayPrice.toFixed(2)} zł`;
                 }
 
                 const lineTotal = price * qty * factor;
@@ -831,6 +832,22 @@
         function getVariantLabel(index) {
             const select = document.getElementById(`variant-${index}`);
             return select ? select.value : '';
+        }
+
+        function getPieceFactor(input, kind, index) {
+            const baseUnit = (input.dataset.unit || '').toLowerCase();
+            if (kind === 'szynka') {
+                const variant = getVariantLabel(index) || '';
+                return variant.toLowerCase().includes('duż') ? 0.85 : 0.5;
+            }
+            if (kind === 'poledwica') return 0.6;
+            if (kind === 'salami') return 0.5;
+            if (baseUnit.includes('szt')) return 1;
+            return 1;
+        }
+
+        function handleVariantChange(index) {
+            calculateTotal();
         }
 
         window.sendOrder = async function(e) {
