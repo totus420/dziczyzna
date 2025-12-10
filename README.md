@@ -29,7 +29,8 @@
   - Linie zamówienia: `line_items` (name, qty, unit) przekazywane do stock update.
 - Update stanów magazynowych:
   - Preferuje arkusz `Produkty`; jeśli brak, szuka pierwszego arkusza z kolumnami `Nazwa` i `Dostępność`/`Dostepnosc`.
-  - Dla każdego line item: znajduje wiersz po znormalizowanej nazwie, obniża `Dostępność` o `qty` (min 0).
+  - Obsługa wariantów szynki: jeśli arkusz ma kolumny `Dostępność (mała)` i `Dostępność (duża)`, a w pozycji koszyka jest wariant MAŁA/DUŻA, aktualizuje odpowiednią kolumnę. Kolumna łączna `Dostępność` też jest zmniejszana (jeśli istnieje).
+  - Dopasowanie nazw: znormalizowana nazwa bez sufiksu w nawiasach (np. `... (MAŁA 0,5 kg)`).
   - Logger wypisuje dopasowania i nowe stany.
 
 ### Kod GAS
@@ -101,17 +102,30 @@ function normalize(str) {
     .replace(/[ąćęłńóśźż]/g, c => ({'ą':'a','ć':'c','ę':'e','ł':'l','ń':'n','ó':'o','ś':'s','ź':'z','ż':'z'}[c] || c))
     .trim();
 }
+function normalizeProductName(name) {
+  return normalize(name).replace(/\(.*?\)/g, '').trim();
+}
+function getVariantKey(name) {
+  const n = normalize(name);
+  if (n.includes('duz')) return 'large';
+  if (n.includes('mal')) return 'small';
+  return '';
+}
 function updateStock(ss, items) {
   Logger.log('Line items: %s', JSON.stringify(items));
   let productSheet = ss.getSheetByName(PRODUCT_TAB);
-  let nameCol, stockCol;
+  let nameCol, stockCol, smallCol, largeCol;
   if (!productSheet) {
     ss.getSheets().some(sh => {
       const headers = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0];
       Logger.log('Sheet %s headers: %s', sh.getName(), headers);
       const idxName = headers.findIndex(h => normalize(h) === 'nazwa');
       const idxStock = headers.findIndex(h => { const n = normalize(h); return n === 'dostepnosc' || n === 'dostępność'; });
-      if (idxName !== -1 && idxStock !== -1) { productSheet = sh; nameCol = idxName + 1; stockCol = idxStock + 1; return true; }
+      const idxSmall = headers.findIndex(h => normalize(h) === 'dostepnosc (mala)');
+      const idxLarge = headers.findIndex(h => normalize(h) === 'dostepnosc (duza)');
+      if (idxName !== -1 && (idxStock !== -1 || idxSmall !== -1 || idxLarge !== -1)) {
+        productSheet = sh; nameCol = idxName + 1; stockCol = idxStock + 1; smallCol = idxSmall + 1; largeCol = idxLarge + 1; return true;
+      }
       return false;
     });
   }
@@ -120,23 +134,39 @@ function updateStock(ss, items) {
     const headers = productSheet.getRange(1, 1, 1, productSheet.getLastColumn()).getValues()[0];
     nameCol = headers.findIndex(h => normalize(h) === 'nazwa') + 1;
     stockCol = headers.findIndex(h => { const n = normalize(h); return n === 'dostepnosc' || n === 'dostępność'; }) + 1;
+    smallCol = headers.findIndex(h => normalize(h) === 'dostepnosc (mala)') + 1;
+    largeCol = headers.findIndex(h => normalize(h) === 'dostepnosc (duza)') + 1;
   }
-  if (nameCol <= 0 || stockCol <= 0) { Logger.log('Name/stock columns not found'); return; }
+  if (nameCol <= 0 || (stockCol <= 0 && smallCol <= 0 && largeCol <= 0)) { Logger.log('Name/stock columns not found'); return; }
   const lastRow = productSheet.getLastRow();
   if (lastRow < 2) { Logger.log('No data rows'); return; }
-  const nameVals = productSheet.getRange(2, nameCol, lastRow - 1, 1).getValues().map(r => normalize(r[0]));
+  const nameVals = productSheet.getRange(2, nameCol, lastRow - 1, 1).getValues().map(r => normalizeProductName(r[0]));
   items.forEach(it => {
-    const n = normalize(it.name);
+    const n = normalizeProductName(it.name);
     const qty = parseFloat(it.qty || 0);
     if (!n || !qty) return;
     const idx = nameVals.indexOf(n);
     Logger.log('Match %s -> row idx %s', n, idx);
     if (idx === -1) return;
     const row = idx + 2;
-    const cur = parseFloat(productSheet.getRange(row, stockCol).getValue()) || 0;
-    const next = Math.max(0, cur - qty);
-    productSheet.getRange(row, stockCol).setValue(next);
-    Logger.log('Row %s: %s -> %s', row, cur, next);
+    const variant = getVariantKey(it.name);
+    if (stockCol > 0) {
+      const cur = parseFloat(productSheet.getRange(row, stockCol).getValue()) || 0;
+      const next = Math.max(0, cur - qty);
+      productSheet.getRange(row, stockCol).setValue(next);
+      Logger.log('Row %s (global stock): %s -> %s', row, cur, next);
+    }
+    if (variant === 'small' && smallCol > 0) {
+      const curS = parseFloat(productSheet.getRange(row, smallCol).getValue()) || 0;
+      const nextS = Math.max(0, curS - qty);
+      productSheet.getRange(row, smallCol).setValue(nextS);
+      Logger.log('Row %s (small): %s -> %s', row, curS, nextS);
+    } else if (variant === 'large' && largeCol > 0) {
+      const curL = parseFloat(productSheet.getRange(row, largeCol).getValue()) || 0;
+      const nextL = Math.max(0, curL - qty);
+      productSheet.getRange(row, largeCol).setValue(nextL);
+      Logger.log('Row %s (large): %s -> %s', row, curL, nextL);
+    }
   });
 }
 ```
