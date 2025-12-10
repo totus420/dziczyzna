@@ -536,13 +536,14 @@
                         </select>
                     </label>
                 ` : '';
-                const extraNotes = [];
-                if (isSzynka) extraNotes.push('Szynka: MAŁA ok. 0,4-0,6 kg, DUŻA ok. 0,7-1,0 kg. Cena liczona wg średniej wagi wariantu.');
-                if (isPoledwica) extraNotes.push('Polędwica: kawałki ok. 0,5-0,7 kg. Ilość w sztukach.');
-                if (isSalami) extraNotes.push('Salami: ok. 0,5 kg za sztukę. Cena liczona z wagi 0,5 kg.');
-                const notesBlock = extraNotes.length ? `
-                    <div class="mt-2 space-y-1 text-xs font-semibold text-amber-800">
-                        ${extraNotes.map(text => `<div>${text}</div>`).join('')}
+                const poledwicaNote = isPoledwica ? `
+                    <div class="mt-2 text-xs font-semibold text-amber-800">
+                        Kawałki ok. 0,5-0,7 kg. Ilość w sztukach.
+                    </div>
+                ` : '';
+                const salamiNote = isSalami ? `
+                    <div class="mt-2 text-xs font-semibold text-amber-800">
+                        Salami ok. 0,5 kg za sztukę. Cena liczona z wagi 0,5 kg.
                     </div>
                 ` : '';
 
@@ -610,7 +611,8 @@
                         <p id="line-total-${productIndex}" class="text-sm font-bold text-green-700 mt-2 opacity-0 transition-opacity duration-200">0.00 zł</p>
                         ${soldOutNote}
                         ${maxQty ? `<span class="text-xs text-amber-700 font-semibold mt-1 block">Zostało ostatnie ${maxQty} ${unit}.</span>` : ''}
-                        ${notesBlock}
+                        ${poledwicaNote}
+                        ${salamiNote}
                     </div>
                 </div>`;
                 
