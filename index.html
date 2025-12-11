@@ -105,6 +105,21 @@
 </head>
 <body class="font-sans antialiased pb-20">
 
+    <div id="promo-popup" class="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 hidden">
+        <div class="absolute inset-0 flex items-center justify-center px-4">
+            <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 border border-amber-200 relative">
+                <button type="button" aria-label="Zamknij" onclick="closePromoPopup()" class="absolute top-3 right-3 text-gray-500 hover:text-gray-700">✕</button>
+                <h3 class="text-lg font-serif accent-text mb-3 text-center">Ważna informacja</h3>
+                <p class="text-base text-gray-800 leading-relaxed text-center">
+                    Następna, przedświąteczna dostawa <strong>21.12</strong> &mdash; zamówienia prosimy składać do <strong>19.12</strong>!
+                </p>
+                <div class="mt-5 text-center">
+                    <button type="button" onclick="closePromoPopup()" class="px-4 py-2 accent-bg text-white rounded-lg font-semibold shadow hover:opacity-90">Rozumiem</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <header class="accent-bg text-white py-8 md:py-10 text-center shadow-md">
         <div class="flex flex-col items-center gap-4">
             <img src="logo.png"
@@ -249,6 +264,7 @@
         const REQUEST_TIMEOUT_MS = 12000;
         let currentDiscount = 0;
         let hasItemsInCart = false;
+        const PROMO_POPUP_KEY = 'promo-popup-2112';
 
         const PRODUCT_RULES = [
             { key: 'salami', match: (name) => name.includes('salami'), unit: 'szt', factor: 0.5, note: 'Średnia waga sztuki: 0,5 kg.' },
@@ -942,6 +958,26 @@
             }
             calculateTotal();
         }
+
+        function showPromoPopup() {
+            const key = PROMO_POPUP_KEY;
+            try {
+                const stored = localStorage.getItem(key);
+                if (stored === 'hidden') return;
+            } catch (e) {}
+            const popup = document.getElementById('promo-popup');
+            if (popup) popup.classList.remove('hidden');
+        }
+
+        window.closePromoPopup = function() {
+            const popup = document.getElementById('promo-popup');
+            if (popup) popup.classList.add('hidden');
+            try { localStorage.setItem(PROMO_POPUP_KEY, 'hidden'); } catch (e) {}
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            showPromoPopup();
+        });
 
         window.sendOrder = async function(e) {
             e.preventDefault();
