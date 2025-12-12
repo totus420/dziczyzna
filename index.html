@@ -268,6 +268,7 @@
         const MIN_ORDER = 200; // minimalna wartość zamówienia w zł
         const REQUEST_TIMEOUT_MS = 12000;
         let currentDiscount = 0;
+        let currentDiscountCode = '';
         let hasItemsInCart = false;
         const PROMO_POPUP_KEY = 'promo-popup-2112';
 
@@ -404,7 +405,14 @@
         function sanitizeQtyInput(input) {
             const step = parseFloat(input.step) || 0.1;
             const decimals = (step.toString().split('.')[1] || '').length;
-            const maxStock = isFinite(parseFloat(input.dataset.stock)) ? parseFloat(input.dataset.stock) : null;
+            const maxStockRaw = isFinite(parseFloat(input.dataset.stock)) ? parseFloat(input.dataset.stock) : null;
+            const parentStockRaw = (() => {
+                const parent = input.closest('.product-item');
+                if (!parent) return null;
+                const stockAttr = parent.dataset.stock || '';
+                return isFinite(parseFloat(stockAttr)) ? parseFloat(stockAttr) : null;
+            })();
+            const maxStock = maxStockRaw !== null ? maxStockRaw : parentStockRaw;
             let val = parseFloat(input.value) || 0;
             val = Math.max(0, val);
             if (maxStock !== null) val = Math.min(val, maxStock);
@@ -656,8 +664,9 @@
                 const szynkaStockAttrs = isSzynka
                     ? ` data-small-stock="${variantStocks.small ?? ''}" data-large-stock="${variantStocks.large ?? ''}"`
                     : '';
+                const productStockAttr = initialStock !== null ? ` data-stock="${initialStock}"` : (maxQty !== null ? ` data-stock="${maxQty}"` : '');
                 const html = `
-                <div class="flex flex-col gap-3 border-b pb-6 product-item ${disabledClass}" data-index="${productIndex}" data-kind="${rule ? rule.key : ''}" data-rule="${rule ? rule.key : ''}" data-base-price="${cena}"${szynkaStockAttrs}>
+                <div class="flex flex-col gap-3 border-b pb-6 product-item ${disabledClass}" data-index="${productIndex}" data-kind="${rule ? rule.key : ''}" data-rule="${rule ? rule.key : ''}" data-base-price="${cena}"${szynkaStockAttrs}${productStockAttr}>
                     <div class="flex flex-col sm:flex-row justify-between sm:items-start gap-4">
                         <div class="flex flex-col sm:flex-row gap-4 w-full p-4 bg-white/80 rounded-xl shadow-sm border border-gray-100">
                             <div class="flex-1 mb-4 sm:mb-0 order-1 sm:order-2">
@@ -682,11 +691,11 @@
                         </div>
                         <div class="flex flex-col items-end sm:items-center mt-2 sm:mt-0">
                             ${variantSelect}
-                            <div class="flex items-center bg-gray-50 p-2 rounded-full shadow-inner">
-                                <button type="button" onclick="changeQty(${productIndex}, -${step})" class="w-8 h-8 md:w-9 md:h-9 flex items-center justify-center bg-amber-200 text-amber-900 rounded-full hover:bg-amber-300 active:scale-95 transition text-lg">-</button>
-                                
-                                <input type="number" 
-                                    min="0" 
+                        <div class="flex items-center bg-gray-50 p-2 rounded-full shadow-inner">
+                            <button type="button" onclick="changeQty(${productIndex}, -${step})" class="w-8 h-8 md:w-9 md:h-9 flex items-center justify-center bg-amber-200 text-amber-900 rounded-full hover:bg-amber-300 active:scale-95 transition text-lg">-</button>
+                            
+                            <input type="number" 
+                                min="0" 
                                     step="${step}" 
                                 placeholder="0" 
                                 id="qty-${productIndex}"
@@ -695,14 +704,15 @@
                                 data-unit="${displayUnit}"
                                 data-stock="${initialStock !== null ? initialStock : ''}"
                                 oninput="calculateTotal()">
-                                
-                                <button type="button" onclick="changeQty(${productIndex}, ${step})" class="w-8 h-8 md:w-9 md:h-9 flex items-center justify-center bg-amber-200 text-amber-900 rounded-full hover:bg-amber-300 active:scale-95 transition text-lg">+</button>
-                            </div>
-                            <p id="line-total-${productIndex}" class="text-sm font-bold text-green-700 mt-2 opacity-0 transition-opacity duration-200">0.00 zł</p>
-                            ${soldOutNote}
-                            ${isSzynka ? stockNote : lowStockNote}
-                            ${poledwicaNote}
+                            
+                            <button type="button" onclick="changeQty(${productIndex}, ${step})" class="w-8 h-8 md:w-9 md:h-9 flex items-center justify-center bg-amber-200 text-amber-900 rounded-full hover:bg-amber-300 active:scale-95 transition text-lg">+</button>
                         </div>
+                        <button type="button" onclick="addToCart(${productIndex})" class="mt-2 px-4 py-2 bg-amber-800 text-white rounded-lg font-semibold shadow hover:opacity-90 w-full sm:w-auto">Dodaj do koszyka</button>
+                        <p id="line-total-${productIndex}" class="text-sm font-bold text-green-700 mt-2 opacity-0 transition-opacity duration-200">0.00 zł</p>
+                        ${soldOutNote}
+                        ${isSzynka ? stockNote : lowStockNote}
+                        ${poledwicaNote}
+                    </div>
                     </div>
                     ${hasDetails ? `<div class="w-full px-1 sm:px-0">${detailsButton}${detailsBlock}</div>` : ''}
                 </div>`;
@@ -775,6 +785,17 @@
             if (!input) return;
             let val = parseFloat(input.value) || 0;
             val += delta;
+            input.value = val;
+            sanitizeQtyInput(input);
+            calculateTotal();
+        }
+
+        window.addToCart = function(index) {
+            const input = document.getElementById(`qty-${index}`);
+            if (!input) return;
+            const stepVal = parseFloat(input.step) || 1;
+            let val = parseFloat(input.value) || 0;
+            val = val > 0 ? val + stepVal : stepVal;
             input.value = val;
             sanitizeQtyInput(input);
             calculateTotal();
@@ -878,10 +899,12 @@
             const msg = document.getElementById('discount-message');
             if (DISCOUNT_CODES[codeInput]) {
                 currentDiscount = DISCOUNT_CODES[codeInput];
+                currentDiscountCode = codeInput;
                 msg.textContent = `Kod aktywny! -${currentDiscount * 100}%`;
                 msg.className = "text-right text-xs mt-1 text-green-600 font-bold h-4";
             } else {
                 currentDiscount = 0;
+                currentDiscountCode = '';
                 msg.textContent = "Błędny kod.";
                 msg.className = "text-right text-xs mt-1 text-red-500 font-bold h-4";
             }
@@ -948,6 +971,7 @@
             const qtyInput = document.getElementById(`qty-${index}`);
             if (qtyInput) {
                 qtyInput.dataset.stock = stockValue !== null ? stockValue : '';
+                item.dataset.stock = stockValue !== null ? stockValue : '';
                 sanitizeQtyInput(qtyInput);
             }
             if (stockNote) {
@@ -1062,6 +1086,7 @@
                 order_details: orderSummary,
                 total_price: totalPrice,
                 discount_info: currentDiscount > 0 ? "TAK" : "NIE",
+                discount_code: currentDiscountCode || '',
                 order_number: orderNumber
             };
 

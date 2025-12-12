@@ -24,9 +24,10 @@
 - Web App (Deploy → Web App, Anyone). Kod w pliku GAS (patrz sekcja „Kod GAS” poniżej).
 - Licznik numerów zamówień: `ScriptProperties.orderCounter`, start `COUNTER_MIN = 300`, `ORDER_PREFIX = ''`. Endpoint akcji: POST body `{ action: "nextOrderNumber" }` → zwraca JSON `{ ok: true, orderNumber, number }`.
 - Zapisywanie zamówienia:
-  - Arkusz docelowy: `sheet_tab` lub domyślnie `Zamowienia`. Tworzy nagłówki: `Numer zamówienia | Data | Imię i Nazwisko | Telefon | Email | Adres | Zamówienie | Kwota | Uwagi`.
+  - Arkusz docelowy: `sheet_tab` lub domyślnie `Zamowienia`. Tworzy nagłówki: `Numer zamówienia | Data | Imię i Nazwisko | Telefon | Email | Adres | Zamówienie | Kwota | Kod rabatowy | Uwagi`.
   - Numer zamówienia: bierze z `order_number` / `orderNumber` / `number`, inaczej generuje nowy.
   - Linie zamówienia: `line_items` (name, qty, unit) przekazywane do stock update.
+  - Kod rabatowy: zapisuje `discount_code` (gdy obecny).
 - Update stanów magazynowych:
   - Preferuje arkusz `Produkty`; jeśli brak, szuka pierwszego arkusza z kolumnami `Nazwa` i `Dostępność`/`Dostepnosc`.
   - Obsługa wariantów szynki: jeśli arkusz ma kolumny `Dostępność (mała)` i `Dostępność (duża)`, a w pozycji koszyka jest wariant MAŁA/DUŻA, aktualizuje odpowiednią kolumnę. Kolumna łączna `Dostępność` też jest zmniejszana (jeśli istnieje).
@@ -54,7 +55,7 @@ function doPost(e) {
     let orderSheet = ss.getSheetByName(tabName);
     if (!orderSheet) {
       orderSheet = ss.insertSheet(tabName);
-      orderSheet.appendRow(['Numer zamówienia', 'Data', 'Imię i Nazwisko', 'Telefon', 'Email', 'Adres', 'Zamówienie', 'Kwota', 'Uwagi']);
+      orderSheet.appendRow(['Numer zamówienia', 'Data', 'Imię i Nazwisko', 'Telefon', 'Email', 'Adres', 'Zamówienie', 'Kwota', 'Kod rabatowy', 'Uwagi']);
     }
     const date = new Date();
     const orderNr = data.order_number || data.orderNumber || data.number || nextOrderNumber().full;
@@ -67,6 +68,7 @@ function doPost(e) {
       data.adres || '',
       data.zamowienie || data.szczegoly || '',
       data.kwota || '',
+      data.discount_code || '',
       data.uwagi || ''
     ]);
     const items = Array.isArray(data.line_items) ? data.line_items : [];
