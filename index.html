@@ -343,6 +343,11 @@
             ), 0);
         };
 
+        const getCartQtyForVariant = (index, variantKey = 'default') => {
+            const key = getCartKey(index, variantKey);
+            return cartState[key]?.qty || 0;
+        };
+
         const normalizeKey = (str = '') => str
             .normalize("NFD")
             .replace(/\p{Diacritic}/gu, '')
@@ -897,11 +902,11 @@
                 const { index, variantKey = 'default', variantLabel = '', qty = 0, unit = 'kg' } = entry;
                 if (qty <= 0) return;
                 const item = document.querySelector(`.product-item[data-index="${index}"]`);
-                if (!item || item.classList.contains('out-of-stock')) return;
-                const priceEl = item.querySelector('.price');
-                const price = parseFloat(item.dataset.basePrice || priceEl?.dataset.basePrice || priceEl?.dataset.price) || 0;
-                const nameRaw = item.querySelector('h3').textContent.trim().replace('(Wyprzedane)', '');
-                const nameBase = nameRaw.replace(/^\d+\.?\s*/, '');
+            if (!item || item.classList.contains('out-of-stock')) return;
+            const priceEl = item.querySelector('.price');
+            const price = parseFloat(item.dataset.basePrice || priceEl?.dataset.basePrice || priceEl?.dataset.price) || 0;
+            const nameRaw = item.querySelector('h3').textContent.trim().replace('(Wyprzedane)', '');
+            const nameBase = nameRaw.replace(/^\d+\.?\s*/, '');
                 const name = variantLabel ? `${nameBase} (${variantLabel})` : nameBase;
                 const ruleKey = item.dataset.rule || '';
                 const rule = PRODUCT_RULES_MAP[ruleKey];
@@ -971,6 +976,8 @@
                     el.classList.remove('opacity-0');
                 }
             });
+
+            updateAllItemStockCaps();
         }
 
         window.applyDiscount = function() {
@@ -1041,6 +1048,36 @@
             if (!rule || !rule.variants) return 1;
             const found = rule.variants.find((v) => getVariantKey(v.label) === variantKey);
             return found ? found.factor : rule.variants[0].factor;
+        }
+
+        function updateItemStockCap(item) {
+            if (!item) return;
+            const index = item.dataset.index;
+            const variantLabel = getVariantLabel(index);
+            const variantKey = getVariantKey(variantLabel);
+            const sharedStockMode = usesSharedVariantStock(item);
+            const baseStock = getEffectiveStockForVariant(item, variantKey);
+            const currentQty = sharedStockMode ? getCartTotalQtyForItem(index) : getCartQtyForVariant(index, variantKey);
+            const remaining = baseStock !== null ? Math.max(0, baseStock - currentQty) : null;
+            const qtyInput = document.getElementById(`qty-${index}`);
+            const stockNote = document.getElementById(`stock-note-${index}`);
+            if (qtyInput) {
+                qtyInput.dataset.stock = remaining !== null ? remaining : '';
+                item.dataset.stock = remaining !== null ? remaining : '';
+                sanitizeQtyInput(qtyInput);
+            }
+            if (stockNote) {
+                if (remaining !== null) {
+                    stockNote.textContent = `Dostępne: ${remaining} szt.`;
+                    stockNote.classList.remove('hidden');
+                } else {
+                    stockNote.classList.add('hidden');
+                }
+            }
+        }
+
+        function updateAllItemStockCaps() {
+            document.querySelectorAll('.product-item').forEach(updateItemStockCap);
         }
 
         window.updateVariantPrice = function(index) {
