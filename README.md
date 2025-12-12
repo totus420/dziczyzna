@@ -17,7 +17,7 @@
 - Koszyk: sticky na desktopie, przyciski +/-/Usuń, rabaty z kodów (LAS2024: 5%, START/ZNAJOMY: 10%). Minimalne zamówienie 200 zł; przy pustym koszyku przycisk submit jest disabled.
 - Formularz: walidacja podstawowa + `autocomplete` (name, tel, email, address-line1, address-level2).
 - Numer zamówienia: najpierw próba pobrania z GAS (`action: nextOrderNumber`), fallback lokalny (licznik w localStorage, bez prefiksu).
-- Zapis zamówienia: fetch POST do `GOOGLE_SCRIPT_URL` (najpierw `cors`, przy błędzie fallback `no-cors`). Payload: `sheet_id`, `sheet_tab`, dane klienta, `zamowienie/szczegoly`, `kwota`, `line_items` (name, qty, unit), `order_number`.
+- Zapis zamówienia: fetch POST do `GOOGLE_SCRIPT_URL` (najpierw `cors`, przy błędzie fallback `no-cors`). Payload: `sheet_id`, `sheet_tab`, dane klienta, `zamowienie/szczegoly`, `kwota`, `line_items` (name, qty, unit), `order_number`, `discount_code`.
 - Email: EmailJS (service/template zdefiniowane w pliku).
 
 ## Backend (Google Apps Script)
