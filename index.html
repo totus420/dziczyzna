@@ -319,6 +319,30 @@
             };
         };
 
+        const usesSharedVariantStock = (item) => item?.dataset?.sharedStock === 'true';
+
+        const getSharedStockValue = (item) => parseStockValue(item?.dataset?.combinedStock) ?? parseStockValue(item?.dataset?.stock);
+
+        const getEffectiveStockForVariant = (item, variantKey = 'default') => {
+            if (!item) return null;
+            const shared = usesSharedVariantStock(item);
+            if (shared) return getSharedStockValue(item);
+            const variantStockRaw = variantKey === 'large'
+                ? item.dataset.largeStock
+                : variantKey === 'small'
+                    ? item.dataset.smallStock
+                    : item.dataset.stock;
+            const variantStock = parseStockValue(variantStockRaw);
+            return variantStock !== null ? variantStock : null;
+        };
+
+        const getCartTotalQtyForItem = (index) => {
+            const idxNum = Number(index);
+            return Object.values(cartState).reduce((sum, entry) => (
+                Number(entry.index) === idxNum ? sum + entry.qty : sum
+            ), 0);
+        };
+
         const normalizeKey = (str = '') => str
             .normalize("NFD")
             .replace(/\p{Diacritic}/gu, '')
@@ -577,7 +601,8 @@
                 const category = normalizeCategory(item['Kategoria'] || item['Kategoria (PL)'] || item['Kategoria1'], item['Nazwa'], item['Opis']);
 
                 const stock = getAvailability(item);
-                const maxQty = isFinite(stock) && stock > 0 ? stock : null;
+                const combinedStock = Number.isFinite(stock) ? stock : null;
+                const maxQty = combinedStock !== null && combinedStock > 0 ? combinedStock : null;
                 const isAvailable = maxQty ? maxQty > 0 : stock > 0;
                 const disabledClass = isAvailable ? '' : 'out-of-stock';
                 const statusText = '';
@@ -590,6 +615,7 @@
                 const isSzynka = rule?.key === 'szynka';
                 const isPoledwica = rule?.key === 'poledwica';
                 const variantStocks = isSzynka ? getVariantStocks(item) : {};
+                const hasVariantStocks = isSzynka && (variantStocks.small !== null || variantStocks.large !== null);
                 let unit = (item['Jednostka'] || 'kg').toString();
                 const isExceptionPiece = rule && (rule.key === 'pasztetowa-sloik' || rule.key === 'golonka-puszka');
                 let qtyUnit = unit.trim();
@@ -644,7 +670,9 @@
                 const variantKeyFromLabel = (label) => normalizeKey(label).includes('duz') ? 'large' : 'small';
                 const initialVariant = isSzynka ? PRODUCT_RULES_MAP.szynka.variants[0] : null;
                 const initialVariantKey = isSzynka ? variantKeyFromLabel(initialVariant.label) : null;
-                const initialStock = isSzynka ? variantStocks[initialVariantKey] : (maxQty !== null ? maxQty : null);
+                const initialStock = isSzynka
+                    ? (hasVariantStocks ? (variantStocks[initialVariantKey] ?? 0) : combinedStock)
+                    : (maxQty !== null ? maxQty : combinedStock);
                 const stockNote = isSzynka ? `
                     <p id="stock-note-${productIndex}" class="text-xs text-amber-800 mt-1 ${initialStock === null ? 'hidden' : ''}">
                         Dostępne: ${initialStock !== null ? initialStock : ''} szt.
@@ -666,12 +694,18 @@
                         ${expiry ? `<p class="text-xs text-amber-700 font-semibold mt-2">⏳ Ważność: ${expiry}</p>` : ''}
                     </div>
                 ` : '';
+                const szynkaSmallStock = isSzynka ? (hasVariantStocks ? variantStocks.small : combinedStock) : null;
+                const szynkaLargeStock = isSzynka ? (hasVariantStocks ? variantStocks.large : combinedStock) : null;
                 const szynkaStockAttrs = isSzynka
-                    ? ` data-small-stock="${variantStocks.small ?? ''}" data-large-stock="${variantStocks.large ?? ''}"`
+                    ? ` data-small-stock="${szynkaSmallStock ?? ''}" data-large-stock="${szynkaLargeStock ?? ''}"`
                     : '';
-                const productStockAttr = initialStock !== null ? ` data-stock="${initialStock}"` : (maxQty !== null ? ` data-stock="${maxQty}"` : '');
+                const productStockAttr = initialStock !== null
+                    ? ` data-stock="${initialStock}"`
+                    : (!hasVariantStocks && combinedStock !== null ? ` data-stock="${combinedStock}"` : '');
+                const combinedStockAttr = combinedStock !== null ? ` data-combined-stock="${combinedStock}"` : '';
+                const variantStockFlags = isSzynka ? ` data-has-variant-stock="${hasVariantStocks}" data-shared-stock="${!hasVariantStocks}"` : '';
                 const html = `
-                <div class="flex flex-col gap-3 border-b pb-6 product-item ${disabledClass}" data-index="${productIndex}" data-kind="${rule ? rule.key : ''}" data-rule="${rule ? rule.key : ''}" data-base-price="${cena}"${szynkaStockAttrs}${productStockAttr}>
+                <div class="flex flex-col gap-3 border-b pb-6 product-item ${disabledClass}" data-index="${productIndex}" data-kind="${rule ? rule.key : ''}" data-rule="${rule ? rule.key : ''}" data-base-price="${cena}"${szynkaStockAttrs}${productStockAttr}${combinedStockAttr}${variantStockFlags}>
                     <div class="flex flex-col sm:flex-row justify-between sm:items-start gap-4">
                         <div class="flex flex-col sm:flex-row gap-4 w-full p-4 bg-white/80 rounded-xl shadow-sm border border-gray-100">
                             <div class="flex-1 mb-4 sm:mb-0 order-1 sm:order-2">
@@ -790,17 +824,23 @@
             const key = getCartKey(index, variantKey);
             const entry = cartState[key];
             if (!entry) return;
-            const baseStock = variantKey === 'large'
-                ? parseStockValue(item.dataset.largeStock)
-                : variantKey === 'small'
-                    ? parseStockValue(item.dataset.smallStock)
-                    : parseStockValue(item.dataset.stock);
-            const newQty = Math.max(0, entry.qty + delta);
-            const capped = baseStock !== null ? Math.min(newQty, baseStock) : newQty;
-            if (capped <= 0) {
+            const sharedStockMode = usesSharedVariantStock(item);
+            const sharedStock = sharedStockMode ? getSharedStockValue(item) : null;
+            const baseStock = sharedStock !== null ? sharedStock : getEffectiveStockForVariant(item, variantKey);
+            let newQty = Math.max(0, entry.qty + delta);
+            if (baseStock !== null) {
+                if (sharedStockMode) {
+                    const totalWithoutCurrent = getCartTotalQtyForItem(index) - entry.qty;
+                    const remaining = Math.max(0, baseStock - totalWithoutCurrent);
+                    newQty = Math.min(newQty, remaining);
+                } else {
+                    newQty = Math.min(newQty, baseStock);
+                }
+            }
+            if (newQty <= 0) {
                 delete cartState[key];
             } else {
-                cartState[key].qty = capped;
+                cartState[key].qty = newQty;
             }
             calculateTotal();
         }
@@ -814,13 +854,12 @@
             const variantLabel = getVariantLabel(index);
             const variantKey = getVariantKey(variantLabel);
             const key = getCartKey(index, variantKey);
-            const baseStock = variantKey === 'large'
-                ? parseStockValue(item.dataset.largeStock)
-                : variantKey === 'small'
-                    ? parseStockValue(item.dataset.smallStock)
-                    : parseStockValue(item.dataset.stock);
+            const sharedStockMode = usesSharedVariantStock(item);
+            const sharedStock = sharedStockMode ? getSharedStockValue(item) : null;
+            const baseStock = sharedStock !== null ? sharedStock : getEffectiveStockForVariant(item, variantKey);
             const currentCartQty = cartState[key]?.qty || 0;
-            const maxAdd = baseStock !== null ? Math.max(0, baseStock - currentCartQty) : null;
+            const currentItemTotalQty = sharedStockMode ? getCartTotalQtyForItem(index) : currentCartQty;
+            const maxAdd = baseStock !== null ? Math.max(0, baseStock - currentItemTotalQty) : null;
             let val = sanitizeQtyInput(input);
             if (val <= 0) return;
             if (maxAdd !== null && val > maxAdd) {
@@ -1013,8 +1052,7 @@
             const variantLabel = getVariantLabel(index);
             const variantKey = getVariantKey(variantLabel);
             const stockNote = document.getElementById(`stock-note-${index}`);
-            const stockValueRaw = variantKey === 'large' ? item.dataset.largeStock : item.dataset.smallStock;
-            const stockValue = parseStockValue(stockValueRaw);
+            const stockValue = getEffectiveStockForVariant(item, variantKey);
             const qtyInput = document.getElementById(`qty-${index}`);
             if (qtyInput) {
                 qtyInput.dataset.stock = stockValue !== null ? stockValue : '';
