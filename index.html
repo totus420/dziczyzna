@@ -650,6 +650,7 @@
                 `;
                 const productIndex = idx;
                 idx += 1;
+                const numberPlaceholder = '__ITEM_NO_PLACEHOLDER__';
                 const variantOptions = isSzynka
                     ? PRODUCT_RULES_MAP.szynka.variants.map((variant) => `<option value="${variant.label}" data-factor="${variant.factor}">${variant.label}</option>`).join('')
                     : '';
@@ -715,7 +716,7 @@
                         <div class="flex flex-col sm:flex-row gap-4 w-full p-4 bg-white/80 rounded-xl shadow-sm border border-gray-100">
                             <div class="flex-1 mb-4 sm:mb-0 order-1 sm:order-2">
                                 <h3 class="text-lg md:text-xl font-semibold accent-text flex items-start">
-                                    <span class="text-gray-400 mr-2 leading-snug pt-0.5">${idx}.</span>
+                                    <span class="text-gray-400 mr-2 leading-snug pt-0.5">${numberPlaceholder}</span>
                                     <span class="leading-snug">${nazwa} ${statusText}</span>
                                 </h3>
                                 <div class="mt-2 sm:hidden">
@@ -773,7 +774,7 @@
                 const sortedItems = [...availableSorted, ...unavailableSorted];
                 let localIdx = 1;
                 const rendered = sortedItems.map(item => {
-                    const numbered = item.html.replace(/<span class="text-gray-400 mr-2">.*?<\/span>/, `<span class="text-gray-400 mr-2">${localIdx}.<\/span>`);
+                    const numbered = item.html.replace('__ITEM_NO_PLACEHOLDER__', `${localIdx}.`);
                     localIdx += 1;
                     return numbered;
                 });
