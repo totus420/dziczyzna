@@ -1032,7 +1032,9 @@
         }
 
         function getVariantKey(label = '') {
-            return normalizeKey(label).includes('duz') ? 'large' : 'small';
+            const norm = normalizeKey(label);
+            if (!norm) return 'default';
+            return norm.includes('duz') ? 'large' : 'small';
         }
 
         function getVariantFactor(index) {
