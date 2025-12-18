@@ -700,7 +700,7 @@
                 const detailsIdMain = `details-${productIndex}-main`;
                 const detailsIdMobile = `details-${productIndex}-mobile`;
                 const detailsButton = hasDetails ? `
-                    <button type="button" class="text-sm font-semibold text-amber-800 flex items-center gap-2 mt-2 justify-center sm:justify-start" onclick="toggleDetails('${detailsIdMain}', this)">
+                    <button type="button" class="text-sm font-semibold text-amber-800 flex items-center gap-2 mt-2 justify-center sm:justify-start w-full text-center sm:text-left" onclick="toggleDetails('${detailsIdMain}', this)">
                         <span class="inline-block transition-transform rotate-0">▼</span>
                         <span>Szczegóły</span>
                     </button>
@@ -757,7 +757,7 @@
                                 <span class="text-xs md:text-sm uppercase font-semibold text-amber-800">/ ${priceUnit}</span>
                             </div>
                                 ${weightNote}
-                                ${hasDetails ? `<div class="hidden sm:flex flex-col mt-2 w-full">${detailsButton}${detailsBlock}</div>` : ''}
+                                ${hasDetails ? `<div class="hidden sm:flex flex-col mt-2 w-full gap-2">${detailsButton}${detailsBlock}</div>` : ''}
                             </div>
                             <div class="w-full sm:w-32 flex-shrink-0 order-2 sm:order-1 hidden sm:block">
                                 ${imageBlock}
