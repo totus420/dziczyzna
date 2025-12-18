@@ -697,15 +697,29 @@
                 ` : '';
 
                 const hasDetails = Boolean(opis || sklad || expiry);
-                const detailsId = `details-${productIndex}`;
+                const detailsIdMain = `details-${productIndex}-main`;
+                const detailsIdMobile = `details-${productIndex}-mobile`;
                 const detailsButton = hasDetails ? `
-                    <button type="button" class="text-sm font-semibold text-amber-800 flex items-center gap-2 mt-2 justify-center sm:justify-start" onclick="toggleDetails('${detailsId}', this)">
+                    <button type="button" class="text-sm font-semibold text-amber-800 flex items-center gap-2 mt-2 justify-center sm:justify-start" onclick="toggleDetails('${detailsIdMain}', this)">
                         <span class="inline-block transition-transform rotate-0">▼</span>
                         <span>Szczegóły</span>
                     </button>
                 ` : '';
                 const detailsBlock = hasDetails ? `
-                    <div id="${detailsId}" class="mt-2 text-sm text-gray-700 bg-amber-50 border border-amber-100 rounded-lg p-3 hidden">
+                    <div id="${detailsIdMain}" class="mt-2 text-sm text-gray-700 bg-amber-50 border border-amber-100 rounded-lg p-3 hidden w-full">
+                        ${opis ? `<p class="text-sm text-gray-700 leading-relaxed">${opis}</p>` : ''}
+                        ${sklad ? `<p class="text-xs italic text-gray-500 mt-2"><span class="font-semibold not-italic text-gray-700">Skład:</span> ${sklad}</p>` : ''}
+                        ${expiry ? `<p class="text-xs text-amber-700 font-semibold mt-2">⏳ Ważność: ${expiry}</p>` : ''}
+                    </div>
+                ` : '';
+                const detailsButtonMobile = hasDetails ? `
+                    <button type="button" class="text-sm font-semibold text-amber-800 flex items-center gap-2 mt-2 justify-center sm:justify-start" onclick="toggleDetails('${detailsIdMobile}', this)">
+                        <span class="inline-block transition-transform rotate-0">▼</span>
+                        <span>Szczegóły</span>
+                    </button>
+                ` : '';
+                const detailsBlockMobile = hasDetails ? `
+                    <div id="${detailsIdMobile}" class="mt-2 text-sm text-gray-700 bg-amber-50 border border-amber-100 rounded-lg p-3 hidden w-full">
                         ${opis ? `<p class="text-sm text-gray-700 leading-relaxed">${opis}</p>` : ''}
                         ${sklad ? `<p class="text-xs italic text-gray-500 mt-2"><span class="font-semibold not-italic text-gray-700">Skład:</span> ${sklad}</p>` : ''}
                         ${expiry ? `<p class="text-xs text-amber-700 font-semibold mt-2">⏳ Ważność: ${expiry}</p>` : ''}
@@ -743,13 +757,13 @@
                                 <span class="text-xs md:text-sm uppercase font-semibold text-amber-800">/ ${priceUnit}</span>
                             </div>
                                 ${weightNote}
-                                ${hasDetails ? `<div class="hidden sm:block mt-2">${detailsButton}${detailsBlock}</div>` : ''}
+                                ${hasDetails ? `<div class="hidden sm:flex flex-col mt-2 w-full">${detailsButton}${detailsBlock}</div>` : ''}
                             </div>
                             <div class="w-full sm:w-32 flex-shrink-0 order-2 sm:order-1 hidden sm:block">
                                 ${imageBlock}
                             </div>
                         </div>
-                        ${hasDetails ? `<div class="w-full px-1 text-center block sm:hidden">${detailsButton}${detailsBlock}</div>` : ''}
+                        ${hasDetails ? `<div class="w-full px-1 text-center block sm:hidden">${detailsButtonMobile}${detailsBlockMobile}</div>` : ''}
                         <div class="flex flex-col items-center mt-2 sm:mt-0">
                             ${variantSelect}
                         <div class="flex items-center bg-gray-50 p-2 rounded-full shadow-inner">
