@@ -328,10 +328,10 @@
             const shared = usesSharedVariantStock(item);
             if (shared) return getSharedStockValue(item);
             const variantStockRaw = variantKey === 'large'
-                ? item.dataset.largeStock
+                ? (item.dataset.baseLargeStock ?? item.dataset.largeStock)
                 : variantKey === 'small'
-                    ? item.dataset.smallStock
-                    : item.dataset.stock;
+                    ? (item.dataset.baseSmallStock ?? item.dataset.smallStock)
+                    : (item.dataset.baseStock ?? item.dataset.stock);
             const variantStock = parseStockValue(variantStockRaw);
             return variantStock !== null ? variantStock : null;
         };
@@ -435,9 +435,13 @@
         }
 
         function roundToStep(value, step) {
-            const decimals = (step.toString().split('.')[1] || '').length;
+            const stepVal = parseFloat(step) || 1;
+            const decimals = (stepVal.toString().split('.')[1] || '').length;
             const multiplier = Math.pow(10, decimals);
-            return Math.round(value * multiplier) / multiplier;
+            const intValue = Math.round(value * multiplier);
+            const intStep = Math.max(1, Math.round(stepVal * multiplier));
+            const roundedInt = Math.round(intValue / intStep) * intStep;
+            return roundedInt / multiplier;
         }
 
         function sanitizeQtyInput(input) {
@@ -710,11 +714,14 @@
                 const szynkaSmallStock = isSzynka ? (hasVariantStocks ? variantStocks.small : combinedStock) : null;
                 const szynkaLargeStock = isSzynka ? (hasVariantStocks ? variantStocks.large : combinedStock) : null;
                 const szynkaStockAttrs = isSzynka
-                    ? ` data-small-stock="${szynkaSmallStock ?? ''}" data-large-stock="${szynkaLargeStock ?? ''}"`
+                    ? ` data-small-stock="${szynkaSmallStock ?? ''}" data-base-small-stock="${szynkaSmallStock ?? ''}" data-large-stock="${szynkaLargeStock ?? ''}" data-base-large-stock="${szynkaLargeStock ?? ''}"`
                     : '';
-                const productStockAttr = initialStock !== null
-                    ? ` data-stock="${initialStock}"`
-                    : (!hasVariantStocks && combinedStock !== null ? ` data-stock="${combinedStock}"` : '');
+                const baseStockValue = initialStock !== null
+                    ? initialStock
+                    : (!hasVariantStocks && combinedStock !== null ? combinedStock : '');
+                const productStockAttr = baseStockValue !== ''
+                    ? ` data-stock="${baseStockValue}" data-base-stock="${baseStockValue}"`
+                    : '';
                 const combinedStockAttr = combinedStock !== null ? ` data-combined-stock="${combinedStock}"` : '';
                 const variantStockFlags = isSzynka ? ` data-has-variant-stock="${hasVariantStocks}" data-shared-stock="${!hasVariantStocks}"` : '';
                 const html = `
@@ -1080,7 +1087,7 @@
             const stockNote = document.getElementById(`stock-note-${index}`);
             if (qtyInput) {
                 qtyInput.dataset.stock = remaining !== null ? remaining : '';
-                item.dataset.stock = remaining !== null ? remaining : '';
+                item.dataset.remainingStock = remaining !== null ? remaining : '';
                 sanitizeQtyInput(qtyInput);
             }
             if (stockNote) {
@@ -1109,8 +1116,10 @@
             const stockValue = getEffectiveStockForVariant(item, variantKey);
             const qtyInput = document.getElementById(`qty-${index}`);
             if (qtyInput) {
-                qtyInput.dataset.stock = stockValue !== null ? stockValue : '';
-                item.dataset.stock = stockValue !== null ? stockValue : '';
+                const stockVal = stockValue !== null ? stockValue : '';
+                qtyInput.dataset.stock = stockVal;
+                item.dataset.baseStock = stockVal;
+                item.dataset.stock = stockVal;
                 sanitizeQtyInput(qtyInput);
             }
             if (stockNote) {
