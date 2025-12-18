@@ -436,8 +436,8 @@
 
         function roundToStep(value, step) {
             const decimals = (step.toString().split('.')[1] || '').length;
-            const rounded = Math.round(value / step) * step;
-            return parseFloat(rounded.toFixed(Math.max(decimals, 1)));
+            const multiplier = Math.pow(10, decimals);
+            return Math.round(value * multiplier) / multiplier;
         }
 
         function sanitizeQtyInput(input) {
