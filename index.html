@@ -434,6 +434,12 @@
             return parseFloat(cleanString) || 0;
         }
 
+        function roundToStep(value, step) {
+            const decimals = (step.toString().split('.')[1] || '').length;
+            const rounded = Math.round(value / step) * step;
+            return parseFloat(rounded.toFixed(Math.max(decimals, 1)));
+        }
+
         function sanitizeQtyInput(input) {
             const step = parseFloat(input.step) || 0.1;
             const decimals = (step.toString().split('.')[1] || '').length;
@@ -448,12 +454,13 @@
             let val = parseFloat(input.value) || 0;
             val = Math.max(0, val);
             if (maxStock !== null) val = Math.min(val, maxStock);
-            const rounded = decimals === 0 ? Math.round(val) : Math.round(val / step) * step;
-            const fixed = decimals === 0 ? rounded : parseFloat(rounded.toFixed(decimals));
-            let finalVal = decimals === 0 ? fixed : parseFloat(fixed.toFixed(decimals));
-            if (maxStock !== null && finalVal > maxStock) finalVal = maxStock;
-            input.value = decimals === 0 ? String(finalVal) : finalVal.toFixed(decimals);
-            return parseFloat(input.value) || 0;
+            const finalVal = roundToStep(val, step);
+            if (maxStock !== null && finalVal > maxStock) {
+                input.value = maxStock.toFixed(Math.max(decimals, 1));
+                return maxStock;
+            }
+            input.value = finalVal.toFixed(Math.max(decimals, 1));
+            return finalVal;
         }
 
         function generateOrderNumber() {
@@ -801,8 +808,9 @@
 
         window.changeQty = function(index, delta) {
             const input = document.getElementById(`qty-${index}`);
+            const step = parseFloat(input.step) || 0.1;
             let val = parseFloat(input.value) || 0;
-            val += delta;
+            val = roundToStep(val + delta, step);
             input.value = val;
             sanitizeQtyInput(input);
         }
@@ -833,10 +841,12 @@
             const key = getCartKey(index, variantKey);
             const entry = cartState[key];
             if (!entry) return;
+            const input = document.getElementById(`qty-${index}`);
+            const step = input ? (parseFloat(input.step) || 1) : (Math.abs(delta) || 1);
             const sharedStockMode = usesSharedVariantStock(item);
             const sharedStock = sharedStockMode ? getSharedStockValue(item) : null;
             const baseStock = sharedStock !== null ? sharedStock : getEffectiveStockForVariant(item, variantKey);
-            let newQty = Math.max(0, entry.qty + delta);
+            let newQty = roundToStep(Math.max(0, entry.qty + delta), step);
             if (baseStock !== null) {
                 if (sharedStockMode) {
                     const totalWithoutCurrent = getCartTotalQtyForItem(index) - entry.qty;
@@ -846,7 +856,7 @@
                     newQty = Math.min(newQty, baseStock);
                 }
             }
-            if (newQty <= 0) {
+            if (newQty <= 0 || newQty < step * 0.01) {
                 delete cartState[key];
             } else {
                 cartState[key].qty = newQty;
