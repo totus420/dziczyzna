@@ -758,7 +758,7 @@
                                 name="${nazwa}"
                                 data-unit="${qtyUnit}"
                                 data-stock="${initialStock !== null ? initialStock : ''}"
-                                oninput="calculateTotal()"
+                                onblur="sanitizeQtyInput(this); calculateTotal();"
                                 onfocus="this.select()">
                             
                             <button type="button" onclick="changeQty(${productIndex}, ${step})" class="w-8 h-8 md:w-9 md:h-9 flex items-center justify-center bg-amber-200 text-amber-900 rounded-full hover:bg-amber-300 active:scale-95 transition text-lg">+</button>
@@ -891,7 +891,8 @@
                 variantLabel,
                 unit: input.dataset.unit || 'kg'
             };
-            cartState[key].qty = (cartState[key].qty || 0) + val;
+            const newQty = roundToStep((cartState[key].qty || 0) + val, stepVal);
+            cartState[key].qty = newQty;
             input.value = '0';
             sanitizeQtyInput(input);
             calculateTotal();
