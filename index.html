@@ -1250,7 +1250,9 @@
                 order_details: orderSummary,
                 total_price: totalPrice,
                 discount_info: currentDiscount > 0 ? "TAK" : "NIE",
-                discount_code: currentDiscountCode || '',
+                discount_code: currentDiscount > 0
+                    ? `${currentDiscountCode || ''} (${(currentDiscount * 100).toFixed(0)}%)`
+                    : '',
                 order_number: orderNumber
             };
 
