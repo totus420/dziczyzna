@@ -1189,31 +1189,33 @@
             clearStatus();
             if (!validateFormFields()) return;
 
+            const cartItems = Object.values(cartState).filter((entry) => entry.qty > 0);
+            if (!cartItems.length) { alert("Wybierz produkty."); return; }
+
             setStatus("Pobieram numer zamówienia...", false, true);
             const orderNumber = await requestOrderNumber();
             let orderSummary = `Numer zamówienia: ${orderNumber}\n`;
-            let hasProducts = false;
             let lineItems = [];
 
-            document.querySelectorAll('.product-item').forEach((item) => {
-                const index = item.dataset.index;
-                const input = item.querySelector('.qty-input');
-                const qty = parseFloat(input.value) || 0;
-                
-                if(qty > 0) {
-                    hasProducts = true;
-                    const nameRaw = item.querySelector('h3').textContent.trim().replace('(Wyprzedane)', '');
-                    const nameBase = nameRaw.replace(/^\d+\.?\s*/, '');
-                    const variant = getVariantLabel(index);
-                    const name = variant ? `${nameBase} (${variant})` : nameBase;
-                    const unit = input.dataset.unit;
-                    const linePrice = document.getElementById(`line-total-${index}`).textContent;
-                    orderSummary += `${name}: ${qty} ${unit} (Razem: ${linePrice})\n`;
-                    lineItems.push({ name, qty, unit });
+            cartItems.forEach((entry) => {
+                const { index, qty, unit = 'kg', variantLabel = '', variantKey = 'default' } = entry;
+                const item = document.querySelector(`.product-item[data-index="${index}"]`);
+                if (!item) return;
+                const nameRaw = item.querySelector('h3').textContent.trim().replace('(Wyprzedane)', '');
+                const nameBase = nameRaw.replace(/^\d+\.?\s*/, '');
+                const name = variantLabel ? `${nameBase} (${variantLabel})` : nameBase;
+                const priceEl = item.querySelector('.price');
+                const price = parseFloat(item.dataset.basePrice || priceEl?.dataset.basePrice || priceEl?.dataset.price) || 0;
+                const ruleKey = item.dataset.rule || '';
+                const rule = PRODUCT_RULES_MAP[ruleKey];
+                let factor = 1;
+                if (rule) {
+                    factor = rule.variants ? getVariantFactorByKey(variantKey) : (rule.factor || 1);
                 }
+                const lineTotal = price * qty * factor;
+                orderSummary += `${name}: ${qty} ${unit} (Razem: ${lineTotal.toFixed(2)} zł)\n`;
+                lineItems.push({ name, qty, unit, lineTotal: lineTotal.toFixed(2) });
             });
-
-            if(!hasProducts) { alert("Wybierz produkty."); return; }
 
             btn.disabled = true;
             btn.textContent = "Zapisywanie zamówienia...";
