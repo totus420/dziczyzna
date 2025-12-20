@@ -267,6 +267,7 @@
         const CATEGORY_ORDER = ["Kiełbasy", "Wędliny", "Przetwory", "Inne"];
         const MIN_ORDER = 200; // minimalna wartość zamówienia w zł
         const REQUEST_TIMEOUT_MS = 12000;
+        let lastDiscountAmount = 0;
         let currentDiscount = 0;
         let currentDiscountCode = '';
         let hasItemsInCart = false;
@@ -980,8 +981,10 @@
             });
 
             let discountAmount = 0;
+            lastDiscountAmount = 0;
             if (currentDiscount > 0 && total > 0) {
                 discountAmount = total * currentDiscount;
+                lastDiscountAmount = discountAmount;
                 summaryHTML += `
                 <div class="flex justify-between items-center text-green-700 mt-2 pt-2 border-t">
                     <span>Rabat (${currentDiscount * 100}%)</span>
@@ -1217,6 +1220,14 @@
                 lineItems.push({ name, qty, unit, lineTotal: lineTotal.toFixed(2) });
             });
 
+            if (currentDiscount > 0) {
+                const percent = (currentDiscount * 100).toFixed(0);
+                const discountLine = lastDiscountAmount > 0
+                    ? `Rabat: -${lastDiscountAmount.toFixed(2)} zł (${percent}%, kod: ${currentDiscountCode || '-'})`
+                    : `Rabat: ${percent}% (kod: ${currentDiscountCode || '-'})`;
+                orderSummary += `${discountLine}\n`;
+            }
+
             btn.disabled = true;
             btn.textContent = "Zapisywanie zamówienia...";
             setStatus("Zapisywanie w systemie...", false, true);
@@ -1253,7 +1264,8 @@
                 discount_code: currentDiscount > 0
                     ? `${currentDiscountCode || ''} (${(currentDiscount * 100).toFixed(0)}%)`
                     : '',
-                order_number: orderNumber
+                discount_amount: lastDiscountAmount > 0 ? lastDiscountAmount.toFixed(2) : '0.00',
+            order_number: orderNumber
             };
 
             // KROK 1: WYSYŁKA DO GOOGLE SHEETS
