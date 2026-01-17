@@ -14,7 +14,7 @@
   - Standard: cena × ilość (kg lub szt w zależności od `Jednostka`).
   - Szynka (słowo „szynk” w nazwie): wybór wariantu MAŁA (0,4–0,6) lub DUŻA (0,7–1,0). Ilość w szt., cena liczona jako cena/kg × 0.5 lub 0.85.
   - Polędwica (słowo „polęd”/„poled”): ilość w szt., cena liczona jako cena/kg × 0.6; dopisek „Kawałki ok. 0,5–0,7 kg”.
-- Koszyk: sticky na desktopie, przyciski +/-/Usuń, rabaty z kodów (LAS2024: 5%, START/ZNAJOMY: 10%). Minimalne zamówienie 200 zł; przy pustym koszyku przycisk submit jest disabled.
+- Koszyk: sticky na desktopie, przyciski +/-/Usuń, rabaty z kodów (`ZNAJOMY`: 10%, `PRZYJACIEL`: 20%). Minimalne zamówienie 200 zł; przy pustym koszyku przycisk submit jest disabled.
 - Formularz: walidacja podstawowa + `autocomplete` (name, tel, email, address-line1, address-level2).
 - Numer zamówienia: najpierw próba pobrania z GAS (`action: nextOrderNumber`), fallback lokalny (licznik w localStorage, bez prefiksu).
 - Zapis zamówienia: fetch POST do `GOOGLE_SCRIPT_URL` (najpierw `cors`, przy błędzie fallback `no-cors`). Payload: `sheet_id`, `sheet_tab`, dane klienta, `zamowienie/szczegoly`, `kwota`, `line_items` (name, qty, unit), `order_number`, `discount_code`.
@@ -179,9 +179,9 @@ function updateStock(ss, items) {
 3. Licznik numerów: zarządzany w `ScriptProperties` (reset przez usunięcie klucza `orderCounter` lub zmianę `COUNTER_MIN` i redeploy).
 
 ## Branching i publikacja
-- Podgląd: branch `ui-tweaks` jest źródłem GitHub Pages (testy i demo). Zmiany testowe wrzucamy tam.
-- Produkcja: branch `main` jest źródłem deployu na home.pl przez FTP.
-- Zasada: najpierw commit/push na branch roboczy (np. `ui-tweaks`), test na Pages, potem po akceptacji merge do `main` i push → automatyczny deploy na home.pl.
+- Podgląd: obecnie brak skonfigurowanego brancha pod GitHub Pages (historycznie `ui-tweaks`). Jeśli potrzebny staging, utwórz gałąź (np. `ui-tweaks`) i włącz Pages dla niej.
+- Produkcja: branch `main` jest źródłem deployu na home.pl przez FTP (workflow).
+- Zasada: pracuj na gałęzi roboczej, po akceptacji merge/push do `main` → automatyczny deploy na home.pl.
 
 ## Automatyczny deploy (home.pl)
 - Workflow: `.github/workflows/deploy.yml`, odpala się na push do `main` lub ręcznie z Actions.
